@@ -80,6 +80,7 @@ player = Player()
 
 class MyWidget(QMainWindow):
     def __init__(self):
+        global SIZE
         super().__init__()
         uic.loadUi('untitled.ui', self)  # Загружаем дизайн
         self.is_pushed = False
@@ -88,7 +89,8 @@ class MyWidget(QMainWindow):
         self.pushButton_3.clicked.connect(self.run)
 
     def run(self):
-        self.size = int(self.sender().text().split('(')[1][0:2]) * 40
+        self.size = int(self.sender().text().split('(')[1][0:2]) * 30
+        self.board_size = int(self.sender().text().split('(')[1][0:2])
         self.is_pushed = True
         self.close()
 
@@ -96,46 +98,35 @@ class MyWidget(QMainWindow):
 def start_screen():
     pygame.init()
     clock = pygame.time.Clock()
+    app = QApplication(sys.argv)
     ex = MyWidget()
     ex.show()
     while True:
         if ex.is_pushed:
-            return ex.size
+            return ex.size, ex.board_size
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
         clock.tick(FPS)
 
-def builder_screen():
-    pygame.init()
-    clock = pygame.time.Clock()
-    text = 'создать'
-    font = pygame.font.Font(None, 30)
-    string_rendered = font.render(text, 1, pygame.Color('black'))
-    intro_rect = string_rendered.get_rect()
-    screen.blit(string_rendered, intro_rect)
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-        clock.tick(FPS)
+
 class Board():
     def __init__(self):
-        self.list = [[None for _ in range(SIZE // 40)] for _ in range(SIZE // 40)]
-        self.width = self.height = SIZE // 40
-        self.side_size = int(SIZE / 40)
-        self.cell_size = 20
-        self.top = SIZE
-        self.left = 0
+        self.list = [[None for _ in range(SIZE // 30)] for _ in range(SIZE // 30)]
+        self.width = self.height = BOARD_SIZE
+        self.side_size = int(SIZE // 30)
+        self.cell_size = 30
+        self.top = (SIZE - self.width * self.cell_size) / 2
+        self.left = (SIZE - self.width * self.cell_size) / 2
 
     def get_cell(self, mouse_pos):
-        x = mouse_pos[0]
-        y = int(-mouse_pos[1] + SIZE)
-        for j in range(self.side_size):
-            for i in range(self.side_size):
-                if y >= abs(x - self.cell_size - 20 * i - 20 * j) + self.top - self.cell_size + i * 20 - 20 * j and \
-                        y <= -abs(x - self.cell_size - 20 * i - 20 * j) + self.top + self.cell_size + i * 20 - 20 * j:
-                    return (j, i)
+        for i in range(self.height):
+            for j in range(self.width):
+                if mouse_pos[0] > self.top + j * self.cell_size and mouse_pos[1] > self.top + i * self.cell_size and \
+                        mouse_pos[0] < self.cell_size + self.top + j * self.cell_size and \
+                        mouse_pos[1] < self.cell_size + self.top + i * self.cell_size:
+                    return (i, j)
+
 
     def on_click(self, cell_coords):
         print(cell_coords)
@@ -145,18 +136,14 @@ class Board():
         self.on_click(cell)
 
     def render(self):
-        top = self.top
-        left = self.left
-        for i in range(int(SIZE / 40) + 1):
-            pygame.draw.line(screen, (255, 255, 255), (left, top), (left + SIZE / 2, top - SIZE / 2), 1)
-            top += 20
-            left += 20
-        top = self.top
-        left = self.left
-        for i in range(int(SIZE / 40) + 1):
-            pygame.draw.line(screen, (255, 255, 255), (left, top), (left + SIZE / 2, top + SIZE / 2), 1)
-            top -= 20
-            left += 20
+        fon = pygame.transform.scale(load_image('fon.jpg'), (SIZE, SIZE))
+        screen = pygame.display.set_mode((SIZE, SIZE))
+        screen.blit(fon, (0, 0))
+        for i in range(self.height):
+            for j in range(self.width):
+                pygame.draw.rect(screen, (255, 255, 255), (self.top + j * self.cell_size,
+                                                           self.top + i * self.cell_size,
+                                                           self.cell_size, self.cell_size), 1)
 
 
 class Human(pygame.sprite.Sprite):
@@ -165,11 +152,10 @@ class Human(pygame.sprite.Sprite):
         self.x = pos_x
         self.y = pos_y
         self.board = board
-        self.cell_size = 20
+        self.cell_size = 30
         self.image = load_image('player_stand.png')
         self.image = pygame.transform.scale(self.image, (25, 25))
-        self.rect = self.image.get_rect().move(self.cell_size * (self.x + self.y) + 6, SIZE / 2 - self.cell_size +
-                                               self.cell_size * self.x - self.cell_size * self.y + 5)
+        self.rect = self.image.get_rect().move(self.y * self.cell_size, self.x * self.cell_size)
         self.is_clicked = False
         self.board.list[pos_x][pos_y] = 'player'
 
@@ -221,16 +207,11 @@ class Human(pygame.sprite.Sprite):
             for y in range(self.y - 1, self.x + 2):
                 self.board.list[x][y] = 'selected_blue'
                 '''
-class Builder(Human):
-    def __init__(self):
-        super().__init__()
 
-    def clicked(self):
-        builder_screen()
 
 if __name__ == '__main__':
     pygame.init()
-    SIZE = start_screen()
+    SIZE, BOARD_SIZE = start_screen()
     screen = pygame.display.set_mode((SIZE, SIZE))
     board = Board()
     all_sprites = pygame.sprite.Group()
@@ -238,10 +219,7 @@ if __name__ == '__main__':
     player_group = pygame.sprite.Group()
     clock = pygame.time.Clock()
     running = True
-    human = Human(randrange(SIZE // 40 // 2 - 2, SIZE // 40 // 2 + 2),
-                  randrange(SIZE // 40 // 2 - 2, SIZE // 40 // 2 + 2), board)
-    builder = Builder(randrange(SIZE // 40 // 2 - 2, SIZE // 40 // 2 + 2),
-                  randrange(SIZE // 40 // 2 - 2, SIZE // 40 // 2 + 2), board)
+    human = Human(7, 11, board)
     screen.fill((0, 0, 0))
     while running:
         for event in pygame.event.get():
@@ -254,6 +232,8 @@ if __name__ == '__main__':
                     if human.can_move(board.get_cell(event.pos)):
                         x, y = board.get_cell(event.pos)
                         human.move(x, y)
+                else:
+                    board.get_click(event.pos)
         board.render()
         all_sprites.draw(screen)
         player_group.draw(screen)
