@@ -80,7 +80,6 @@ player = Player()
 
 class MyWidget(QMainWindow):
     def __init__(self):
-        global SIZE
         super().__init__()
         uic.loadUi('untitled.ui', self)  # Загружаем дизайн
         self.is_pushed = False
@@ -97,7 +96,6 @@ class MyWidget(QMainWindow):
 def start_screen():
     pygame.init()
     clock = pygame.time.Clock()
-    app = QApplication(sys.argv)
     ex = MyWidget()
     ex.show()
     while True:
@@ -108,13 +106,25 @@ def start_screen():
                 terminate()
         clock.tick(FPS)
 
-
+def builder_screen():
+    pygame.init()
+    clock = pygame.time.Clock()
+    text = 'создать'
+    font = pygame.font.Font(None, 30)
+    string_rendered = font.render(text, 1, pygame.Color('black'))
+    intro_rect = string_rendered.get_rect()
+    screen.blit(string_rendered, intro_rect)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+        clock.tick(FPS)
 class Board():
     def __init__(self):
         self.list = [[None for _ in range(SIZE // 40)] for _ in range(SIZE // 40)]
         self.width = self.height = SIZE // 40
         self.side_size = int(SIZE / 40)
-        self.cell_size = 30
+        self.cell_size = 20
         self.top = SIZE
         self.left = 0
 
@@ -135,13 +145,18 @@ class Board():
         self.on_click(cell)
 
     def render(self):
-        fon = pygame.transform.scale(load_image('fon.jpg'), (SIZE, SIZE))
-        screen = pygame.display.set_mode((SIZE, SIZE))
-        screen.blit(fon, (0, 0))
-        for i in range(self.height):
-            for e in range(self.width):
-                pygame.draw.rect(screen, ('white'), (self.top + e * self.cell_size, self.top + i * self.cell_size,
-                                                     self.cell_size, self.cell_size), 1)
+        top = self.top
+        left = self.left
+        for i in range(int(SIZE / 40) + 1):
+            pygame.draw.line(screen, (255, 255, 255), (left, top), (left + SIZE / 2, top - SIZE / 2), 1)
+            top += 20
+            left += 20
+        top = self.top
+        left = self.left
+        for i in range(int(SIZE / 40) + 1):
+            pygame.draw.line(screen, (255, 255, 255), (left, top), (left + SIZE / 2, top + SIZE / 2), 1)
+            top -= 20
+            left += 20
 
 
 class Human(pygame.sprite.Sprite):
@@ -206,7 +221,12 @@ class Human(pygame.sprite.Sprite):
             for y in range(self.y - 1, self.x + 2):
                 self.board.list[x][y] = 'selected_blue'
                 '''
+class Builder(Human):
+    def __init__(self):
+        super().__init__()
 
+    def clicked(self):
+        builder_screen()
 
 if __name__ == '__main__':
     pygame.init()
@@ -219,6 +239,8 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()
     running = True
     human = Human(randrange(SIZE // 40 // 2 - 2, SIZE // 40 // 2 + 2),
+                  randrange(SIZE // 40 // 2 - 2, SIZE // 40 // 2 + 2), board)
+    builder = Builder(randrange(SIZE // 40 // 2 - 2, SIZE // 40 // 2 + 2),
                   randrange(SIZE // 40 // 2 - 2, SIZE // 40 // 2 + 2), board)
     screen.fill((0, 0, 0))
     while running:
