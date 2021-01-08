@@ -162,8 +162,7 @@ class Human(pygame.sprite.Sprite):
     def move(self, x, y):
         self.x = x
         self.y = y
-        self.rect = self.image.get_rect().move(self.cell_size * (self.x + self.y) + 6, SIZE / 2 - self.cell_size +
-                                               self.cell_size * self.x - self.cell_size * self.y + 5)
+        self.rect = self.image.get_rect().move(self.y * self.cell_size, self.x * self.cell_size)
 
     def can_move(self, coords):
         x = coords[0]
