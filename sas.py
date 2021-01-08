@@ -3,7 +3,7 @@ import sys
 from PyQt5 import uic  # Импортируем uic
 from PyQt5.QtWidgets import QApplication, QMainWindow
 import os
-from random import randrange, randint
+from random import randrange
 
 pygame.init()
 SIZE = 1000
@@ -112,10 +112,11 @@ def start_screen():
 class Board():
     def __init__(self):
         self.list = [[None for _ in range(SIZE // 40)] for _ in range(SIZE // 40)]
-        self.top = SIZE / 2
-        self.left = 0
+        self.width = self.height = SIZE // 40
         self.side_size = int(SIZE / 40)
-        self.cell_size = 20
+        self.cell_size = 30
+        self.top = SIZE
+        self.left = 0
 
     def get_cell(self, mouse_pos):
         x = mouse_pos[0]
@@ -137,18 +138,10 @@ class Board():
         fon = pygame.transform.scale(load_image('fon.jpg'), (SIZE, SIZE))
         screen = pygame.display.set_mode((SIZE, SIZE))
         screen.blit(fon, (0, 0))
-        top = self.top
-        left = self.left
-        for i in range(self.side_size + 1):
-            pygame.draw.line(screen, (255, 255, 255), (left, top), (left + SIZE / 2, top - SIZE / 2), 1)
-            top += 20
-            left += 20
-        top = self.top
-        left = self.left
-        for i in range(self.side_size + 1):
-            pygame.draw.line(screen, (255, 255, 255), (left, top), (left + SIZE / 2, top + SIZE / 2), 1)
-            top -= 20
-            left += 20
+        for i in range(self.height):
+            for e in range(self.width):
+                pygame.draw.rect(screen, ('white'), (self.top + e * self.cell_size, self.top + i * self.cell_size,
+                                                     self.cell_size, self.cell_size), 1)
 
 
 class Human(pygame.sprite.Sprite):
