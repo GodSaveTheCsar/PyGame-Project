@@ -86,7 +86,6 @@ class Resource(Tile):
         if name == 'food':
             self.image = pygame.transform.scale(load_image('food.png'), (30, 30))
             self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
-
         if name == 'wood':
             self.image = load_image('wood.png')
             self.image = pygame.transform.scale(self.image, (28, 28))
@@ -245,7 +244,7 @@ class Board():
                 builder.clicked()
             elif scout.get_coords() == cell_coords:
                 scout.clicked()
-        if builder.is_clicked and event.button == 3:
+        if (builder.is_clicked or scout.is_clicked) and event.button == 3:
             if builder.can_move(cell_coords):
                 builder.move(cell_coords[0], cell_coords[1])
             elif scout.can_move(cell_coords):
@@ -271,16 +270,18 @@ class Human(pygame.sprite.Sprite):
         self.y = pos_y
         self.board = board
         self.cell_size = 30
-        self.image = load_image('scout.png')
-        self.image = pygame.transform.scale(self.image, (25, 25))
-        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
         self.is_clicked = False
         self.board.list[pos_x][pos_y] = 'human'
 
     def move(self, x, y):
         self.x = x
         self.y = y
+        self.board.list[self.x][self.y] = 'human'
+        self.board.list[x][y] = 'human'
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
+
+    def unclick(self):
+        self.is_clicked = False
 
     def can_move(self, coords):
         x = coords[0]
@@ -316,11 +317,15 @@ class Human(pygame.sprite.Sprite):
             if x + 1 == self.x or x - 1 == self.x:
                 return True
 
-    def clicked(self):
+    '''def clicked(self):
         if self.is_clicked:
             self.is_clicked = False
         else:
             self.is_clicked = True
+        for i in range(len(self.board.list)):
+            for j in range(len(self.board.list)):
+                if self.board.list[i][j]:
+                    pass'''
 
     def get_coords(self):
         return self.x, self.y
@@ -329,6 +334,9 @@ class Human(pygame.sprite.Sprite):
 class Builder(Human):
     def __init__(self, pos_x, pos_y, board):
         super().__init__(pos_x, pos_y, board)
+        self.image = load_image('player_stand.png')
+        self.image = pygame.transform.scale(self.image, (30, 30))
+        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
 
     def clicked(self):
         if self.is_clicked:
@@ -376,6 +384,9 @@ class Builder(Human):
 class Scout(Human):
     def __init__(self, x, y, board):
         super().__init__(x, y, board)
+        self.image = load_image('scout.png')
+        self.image = pygame.transform.scale(self.image, (30, 30))
+        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
 
     def clicked(self):
         if self.is_clicked:
@@ -386,8 +397,8 @@ class Scout(Human):
     def can_move(self, coords):
         x = coords[0]
         y = coords[1]
-        if abs(self.x - x) <= 2 and abs(self.y - y) <= 2:
-            print(self.board[x][y].__name__)
+        if abs(self.x - x) <= 2 and abs(self.y - y) <= 2 and self.board.list[x][y].__class__.__name__ != 'name':
+            return True
 
 
 if __name__ == '__main__':
