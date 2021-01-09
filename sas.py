@@ -243,12 +243,12 @@ class Board():
         if event.button == 1:
             if builder.get_coords() == cell_coords:
                 builder.clicked()
-            if scout.get_coords() == cell_coords:
+            elif scout.get_coords() == cell_coords:
                 scout.clicked()
         if builder.is_clicked and event.button == 3:
             if builder.can_move(cell_coords):
                 builder.move(cell_coords[0], cell_coords[1])
-            if scout.can_move(cell_coords):
+            elif scout.can_move(cell_coords):
                 scout.move(cell_coords[0], cell_coords[1])
         print(cell_coords)
 
@@ -376,9 +376,6 @@ class Builder(Human):
 class Scout(Human):
     def __init__(self, x, y, board):
         super().__init__(x, y, board)
-        '''self.image = load_image('scout.png')
-        self.image = pygame.transform.scale(self.image, (25, 25))
-        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)'''
 
     def clicked(self):
         if self.is_clicked:
