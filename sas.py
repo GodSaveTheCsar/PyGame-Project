@@ -315,6 +315,8 @@ class Human(pygame.sprite.Sprite):
         else:
             self.is_clicked = True
 
+    def get_coords(self):
+        return self.rect.x + 1, self.rect.y + 1
 
 class Builder(Human):
     def __init__(self, pos_x, pos_y, board):
@@ -350,8 +352,9 @@ if __name__ == '__main__':
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    print(1)
-                    builder.clicked()
+                    print(board.get_cell(builder.get_coords()))
+                    if board.get_cell(builder.get_coords()) == board.get_cell(event.pos):
+                        builder.clicked()
                 if builder.is_clicked and event.button == 3:
                     if builder.can_move(board.get_cell(event.pos)):
                         x, y = board.get_cell(event.pos)
@@ -362,7 +365,7 @@ if __name__ == '__main__':
         all_sprites.draw(screen)
         board.render()
         builder_sprites.draw(screen)
-        resources_screen(player.resources)
+        #resources_screen(player.resources)
         resources_sprites.draw(screen)
         player_group.draw(screen)
         pygame.display.flip()
