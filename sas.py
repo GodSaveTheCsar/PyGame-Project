@@ -219,12 +219,12 @@ class Board():
         self.list = [[0 for i in range(self.width)] for j in range(self.height)]
         for i in range(self.width):
             for j in range(self.height):
-                self.list[i][j] = Pole(i, j, all_sprites)
-        self.list[xiron][yiron] = Resource(xiron, yiron, 'iron', all_sprites)
-        self.list[xtree][ytree] = Resource(xtree, ytree, 'tree', all_sprites)
-        self.list[xwater][ywater] = Resource(xwater, ywater, 'water', all_sprites)
-        self.list[xfood][yfood] = Resource(xfood, yfood, 'food', all_sprites)
-        self.list[SIZE // 40 // 2][SIZE // 40 // 2] = Castle(SIZE // 40 // 2, SIZE // 40 // 2, all_sprites)
+                self.list[i][j] = [Pole(i, j, all_sprites)]
+        self.list[xiron][yiron].append(Resource(xiron, yiron, 'iron', all_sprites))
+        self.list[xtree][ytree].append(Resource(xtree, ytree, 'tree', all_sprites))
+        self.list[xwater][ywater].append(Resource(xwater, ywater, 'water', all_sprites))
+        self.list[xfood][yfood].append(Resource(xfood, yfood, 'food', all_sprites))
+        self.list[SIZE // 40 // 2][SIZE // 40 // 2].append(Castle(SIZE // 40 // 2, SIZE // 40 // 2, all_sprites))
         self.side_size = int(SIZE // 30)
         self.cell_size = 30
         self.top = (SIZE - self.width * self.cell_size) / 2
@@ -271,13 +271,13 @@ class Human(pygame.sprite.Sprite):
         self.board = board
         self.cell_size = 30
         self.is_clicked = False
-        self.board.list[pos_x][pos_y] = 'human'
+        self.board.list[pos_x][pos_y].append(self)
 
     def move(self, x, y):
+        self.board.list[self.x][self.y].remove(self)
+        self.board.list[x][y].append(self)
         self.x = x
         self.y = y
-        self.board.list[self.x][self.y] = 'human'
-        self.board.list[x][y] = 'human'
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
 
     def unclick(self):
@@ -317,15 +317,18 @@ class Human(pygame.sprite.Sprite):
             if x + 1 == self.x or x - 1 == self.x:
                 return True
 
-    '''def clicked(self):
+    def clicked(self):
         if self.is_clicked:
             self.is_clicked = False
         else:
             self.is_clicked = True
-        for i in range(len(self.board.list)):
-            for j in range(len(self.board.list)):
-                if self.board.list[i][j]:
-                    pass'''
+        for i in self.board.list:
+            for j in i:
+                for tile in j:
+                    if tile.__class__.__name__ == 'Builder':
+                        tile.unclick()
+                    if tile.__class__.__name__ == 'Scout':
+                        tile.unclick()
 
     def get_coords(self):
         return self.x, self.y
@@ -343,6 +346,13 @@ class Builder(Human):
             self.is_clicked = False
         else:
             self.is_clicked = True
+        for i in self.board.list:
+            for j in self.board.list:
+                for tile in j:
+                    if tile.__class__.__name__ == 'Builder':
+                        tile.unclick()
+                    if tile.__class__.__name__ == 'Scout':
+                        tile.unclick()
         builder_screen(self)
 
 
@@ -397,7 +407,11 @@ class Scout(Human):
     def can_move(self, coords):
         x = coords[0]
         y = coords[1]
-        if abs(self.x - x) <= 2 and abs(self.y - y) <= 2 and self.board.list[x][y].__class__.__name__ != 'name':
+        print(abs(self.x - x) <= 2, abs(self.y - y) <= 2, 'Builder' not in [i.__class__.__name__ for i in self.board.list[x][y]],
+        'Scout' not in [i.__class__.__name__ for i in self.board.list[x][y]])
+        if abs(self.x - x) <= 2 and abs(self.y - y) <= 2 and 'Builder' not in [i.__class__.__name__ for i in self.board.list[x][y]]\
+                and 'Scout' not in [i.__class__.__name__ for i in self.board.list[x][y]]:
+            print(1)
             return True
 
 
