@@ -239,17 +239,24 @@ class Board():
                         mouse_pos[1] <= self.cell_size + self.top + i * self.cell_size:
                     return (i, j)
 
-    def on_click(self, cell_coords):
+    def on_click(self, cell_coords, event):
+        if event.button == 1:
+            if builder.get_coords() == cell_coords:
+                builder.clicked()
+            if scout.get_coords() == cell_coords:
+                scout.clicked()
+        if builder.is_clicked and event.button == 3:
+            if builder.can_move(cell_coords):
+                builder.move(cell_coords[0], cell_coords[1])
+            if scout.can_move(cell_coords):
+                scout.move(cell_coords[0], cell_coords[1])
         print(cell_coords)
 
-    def get_click(self, mouse_pos):
+    def get_click(self, mouse_pos, event):
         cell = self.get_cell(mouse_pos)
-        self.on_click(cell)
+        self.on_click(cell, event)
 
     def render(self):
-        '''fon = pygame.transform.scale(load_image('fon.jpg'), (SIZE, SIZE))
-        screen = pygame.display.set_mode((SIZE, SIZE))
-        screen.blit(fon, (0, 0))'''
         for i in range(self.height):
             for j in range(self.width):
                 pygame.draw.rect(screen, (255, 255, 255), (self.top + j * self.cell_size,
@@ -264,7 +271,7 @@ class Human(pygame.sprite.Sprite):
         self.y = pos_y
         self.board = board
         self.cell_size = 30
-        self.image = load_image('player_stand.png')
+        self.image = load_image('scout.png')
         self.image = pygame.transform.scale(self.image, (25, 25))
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
         self.is_clicked = False
@@ -316,7 +323,8 @@ class Human(pygame.sprite.Sprite):
             self.is_clicked = True
 
     def get_coords(self):
-        return self.rect.x + 1, self.rect.y + 1
+        return self.x, self.y
+
 
 class Builder(Human):
     def __init__(self, pos_x, pos_y, board):
@@ -328,6 +336,61 @@ class Builder(Human):
         else:
             self.is_clicked = True
         builder_screen(self)
+
+
+    def can_move(self, coords):
+        x = coords[0]
+        y = coords[1]
+        if x == self.x:
+            if y == self.y:
+                return False
+            if y + 1 == self.y or y - 1 == self.y:
+                return True
+        if y == self.y:
+            if x == self.x:
+                return False
+            if x + 1 == self.x or x - 1 == self.x:
+                return True
+        if x + 1 == self.x:
+            if y == self.y:
+                return False
+            if y + 1 == self.y or y - 1 == self.y:
+                return True
+        if y + 1 == self.y:
+            if x == self.x:
+                return False
+            if x + 1 == self.x or x - 1 == self.x:
+                return True
+        if x - 1 == self.x:
+            if y == self.y:
+                return False
+            if y + 1 == self.y or y - 1 == self.y:
+                return True
+        if y - 1 == self.y:
+            if x == self.x:
+                return False
+            if x + 1 == self.x or x - 1 == self.x:
+                return True
+
+
+class Scout(Human):
+    def __init__(self, x, y, board):
+        super().__init__(x, y, board)
+        '''self.image = load_image('scout.png')
+        self.image = pygame.transform.scale(self.image, (25, 25))
+        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)'''
+
+    def clicked(self):
+        if self.is_clicked:
+            self.is_clicked = False
+        else:
+            self.is_clicked = True
+
+    def can_move(self, coords):
+        x = coords[0]
+        y = coords[1]
+        if abs(self.x - x) <= 2 and abs(self.y - y) <= 2:
+            print(self.board[x][y].__name__)
 
 
 if __name__ == '__main__':
@@ -344,6 +407,8 @@ if __name__ == '__main__':
     running = True
     builder = Builder(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
                       randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), board)
+    scout = Scout(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
+                      randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), board)
     screen.fill((0, 0, 0))
     player = Player()
     while running:
@@ -351,21 +416,12 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    print(board.get_cell(builder.get_coords()))
-                    if board.get_cell(builder.get_coords()) == board.get_cell(event.pos):
-                        builder.clicked()
-                if builder.is_clicked and event.button == 3:
-                    if builder.can_move(board.get_cell(event.pos)):
-                        x, y = board.get_cell(event.pos)
-                        builder.move(x, y)
-                else:
-                    board.get_click(event.pos)
+                board.get_click(event.pos, event)
         fon_paint()
         all_sprites.draw(screen)
         board.render()
         builder_sprites.draw(screen)
-        #resources_screen(player.resources)
+        resources_screen(player.resources)
         resources_sprites.draw(screen)
         player_group.draw(screen)
         pygame.display.flip()
