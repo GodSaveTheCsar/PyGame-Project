@@ -80,9 +80,6 @@ class Resource(Tile):
         if name == 'iron':
             self.image = pygame.transform.scale(load_image('iron.png'), (30, 30))
             self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
-        if name == 'water':
-            self.image = pygame.transform.scale(load_image('water.jpg'), (30, 30))
-            self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
         if name == 'food':
             self.image = pygame.transform.scale(load_image('food.png'), (30, 30))
             self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
@@ -223,16 +220,6 @@ class Board():
         for i in range(self.width):
             for j in range(self.height):
                 self.list[i][j] = Pole(i, j, all_sprites)
-        '''for x_water in range(0, SIZE // 30):
-            for y_water in range():
-                for x in range(3):
-                    for y in range(randrange(1, 5)):
-                        if x * (x_water + 1) > SIZE // 30 or y * (y_water + 1) > SIZE // 30:
-                            continue
-                        if self.list[x * (x_water + 1)][y * (y_water + 1)].__class__.__name__ == 'Resource':
-                            continue
-                        self.list[x * (x_water + 1)][y * (y_water + 1)] = Resource(x * (x_water + 1), y * (y_water + 1),
-                                                                                 'water', all_sprites)'''
         for x_iron in range(0, self.width, 4):
             for y_iron in range(0, self.width, 3):
                 for x in range(randrange(2, 4)):
