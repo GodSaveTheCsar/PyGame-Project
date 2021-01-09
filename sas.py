@@ -181,7 +181,6 @@ def resources_screen(resources):
         intro_rect.y = 15
         screen.blit(string_rendered, intro_rect)
 
-
 def builder_screen(builder):
     global builder_sprites
     if builder.is_clicked:
@@ -217,6 +216,8 @@ def builder_screen(builder):
 
 class Board():
     def __init__(self):
+        xiron, yiron, xtree, ytree, xwater, ywater, xfood, yfood = [randrange(SIZE // 40 // 2 - 4, SIZE // 40 // 2 + 4)
+                                                                    for i in range(8)]
         self.width = self.height = BOARD_SIZE
         self.list = [[0 for i in range(self.width)] for j in range(self.height)]
         for i in range(self.width):
@@ -296,7 +297,8 @@ class Board():
     def render(self):
         for i in range(self.height):
             for j in range(self.width):
-                pygame.draw.rect(screen, (255, 255, 255), (self.top + j * self.cell_size, self.top + i * self.cell_size,
+                pygame.draw.rect(screen, (255, 255, 255), (self.top + j * self.cell_size,
+                                                           self.top + i * self.cell_size,
                                                            self.cell_size, self.cell_size), 1)
 
 
@@ -354,15 +356,18 @@ class Human(pygame.sprite.Sprite):
             if x + 1 == self.x or x - 1 == self.x:
                 return True
 
-    '''def clicked(self):
+    def clicked(self):
         if self.is_clicked:
             self.is_clicked = False
         else:
             self.is_clicked = True
-        for i in range(len(self.board.list)):
-            for j in range(len(self.board.list)):
-                if self.board.list[i][j]:
-                    pass'''
+        for i in self.board.list:
+            for j in i:
+                for tile in j:
+                    if tile.__class__.__name__ == 'Builder':
+                        tile.unclick()
+                    if tile.__class__.__name__ == 'Scout':
+                        tile.unclick()
 
     def get_coords(self):
         return self.x, self.y
@@ -380,7 +385,15 @@ class Builder(Human):
             self.is_clicked = False
         else:
             self.is_clicked = True
+        for i in self.board.list:
+            for j in self.board.list:
+                for tile in j:
+                    if tile.__class__.__name__ == 'Builder':
+                        tile.unclick()
+                    if tile.__class__.__name__ == 'Scout':
+                        tile.unclick()
         builder_screen(self)
+
 
     def can_move(self, coords):
         x = coords[0]
