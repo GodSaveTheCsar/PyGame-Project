@@ -181,6 +181,7 @@ def resources_screen(resources):
         intro_rect.y = 15
         screen.blit(string_rendered, intro_rect)
 
+
 def builder_screen(builder):
     global builder_sprites
     if builder.is_clicked:
@@ -202,29 +203,66 @@ def builder_screen(builder):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     terminate()
-            frame.rect.y -= 250 / FPS
-            build.rect.y -= 250 / FPS
+            frame.rect.y -= 600 / FPS
+            build.rect.y -= 600 / FPS
             builder_sprites.draw(screen)
             pygame.display.flip()
             clock.tick(FPS)
+        if frame.rect.y != SIZE - 100:
+            frame.rect.y = SIZE - 100
+            build.rect.y = SIZE - 75
     else:
         builder_sprites = pygame.sprite.Group()
 
 
 class Board():
     def __init__(self):
-        xiron, yiron, xtree, ytree, xwater, ywater, xfood, yfood = [randrange(SIZE // 40 // 2 - 4, SIZE // 40 // 2 + 4)
-                                                                    for i in range(8)]
         self.width = self.height = BOARD_SIZE
         self.list = [[0 for i in range(self.width)] for j in range(self.height)]
         for i in range(self.width):
             for j in range(self.height):
                 self.list[i][j] = Pole(i, j, all_sprites)
-        self.list[xiron][yiron] = Resource(xiron, yiron, 'iron', all_sprites)
-        self.list[xtree][ytree] = Resource(xtree, ytree, 'tree', all_sprites)
-        self.list[xwater][ywater] = Resource(xwater, ywater, 'water', all_sprites)
-        self.list[xfood][yfood] = Resource(xfood, yfood, 'food', all_sprites)
-        self.list[SIZE // 40 // 2][SIZE // 40 // 2] = Castle(SIZE // 40 // 2, SIZE // 40 // 2, all_sprites)
+        '''for x_water in range(0, SIZE // 30):
+            for y_water in range():
+                for x in range(3):
+                    for y in range(randrange(1, 5)):
+                        if x * (x_water + 1) > SIZE // 30 or y * (y_water + 1) > SIZE // 30:
+                            continue
+                        if self.list[x * (x_water + 1)][y * (y_water + 1)].__class__.__name__ == 'Resource':
+                            continue
+                        self.list[x * (x_water + 1)][y * (y_water + 1)] = Resource(x * (x_water + 1), y * (y_water + 1),
+                                                                                 'water', all_sprites)'''
+        for x_iron in range(0, self.width, 4):
+            for y_iron in range(0, self.width, 3):
+                for x in range(randrange(2, 4)):
+                    for y in range(randrange(2, 4)):
+                        if x * (x_iron + 1) >= self.width or y * (y_iron + 1) >= self.width:
+                            continue
+                        if self.list[x * (x_iron + 1)][y * (y_iron + 1)].__class__.__name__ == 'Resource':
+                            continue
+                        self.list[x * (x_iron + 1)][y * (y_iron + 1)] = Resource(x * (x_iron + 1), y * (y_iron + 1),
+                                                                                 'iron', all_sprites)
+        for x_tree in range(0, self.width, 2):
+            for y_tree in range(0, self.width, 2):
+                for x in range(randrange(2, 4)):
+                    for y in range(randrange(1, 4)):
+                        if x * (x_tree + 1) >= self.width or y * (y_tree + 1) >= self.width:
+                            continue
+                        if self.list[x * (x_tree + 1)][y * (y_tree + 1)].__class__.__name__ == 'Resource':
+                            continue
+                        self.list[x * (x_tree + 1)][y * (y_tree + 1)] = Resource(x * (x_tree + 1), y * (y_tree + 1),
+                                                                                 'tree', all_sprites)
+        for x_food in range(0, self.width, 2):
+            for y_food in range(0, self.width, 2):
+                for x in range(3):
+                    for y in range(randrange(1, 3)):
+                        if x * (x_food + 1) >= self.width or y * (y_food + 1) >= self.width:
+                            continue
+                        if self.list[x * (x_food + 1)][y * (y_food + 1)].__class__.__name__ == 'Resource':
+                            continue
+                        self.list[x * (x_food + 1)][y * (y_food + 1)] = Resource(x * (x_food + 1), y * (y_food + 1),
+                                                                                 'food', all_sprites)
+        self.list[SIZE // 30 // 2][SIZE // 30 // 2] = Castle(SIZE // 30 // 2, SIZE // 30 // 2, all_sprites)
         self.side_size = int(SIZE // 30)
         self.cell_size = 30
         self.top = (SIZE - self.width * self.cell_size) / 2
@@ -258,8 +296,7 @@ class Board():
     def render(self):
         for i in range(self.height):
             for j in range(self.width):
-                pygame.draw.rect(screen, (255, 255, 255), (self.top + j * self.cell_size,
-                                                           self.top + i * self.cell_size,
+                pygame.draw.rect(screen, (255, 255, 255), (self.top + j * self.cell_size, self.top + i * self.cell_size,
                                                            self.cell_size, self.cell_size), 1)
 
 
@@ -345,7 +382,6 @@ class Builder(Human):
             self.is_clicked = True
         builder_screen(self)
 
-
     def can_move(self, coords):
         x = coords[0]
         y = coords[1]
@@ -416,7 +452,7 @@ if __name__ == '__main__':
     builder = Builder(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
                       randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), board)
     scout = Scout(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
-                      randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), board)
+                  randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), board)
     screen.fill((0, 0, 0))
     player = Player()
     while running:
