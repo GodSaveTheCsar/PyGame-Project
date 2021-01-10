@@ -10,6 +10,7 @@ SIZE = 1000
 FPS = 50
 CELL_SIZE = 30
 
+
 def fon_paint():
     fon = pygame.transform.scale(load_image('fon.jpg'), (SIZE, SIZE))
     screen = pygame.display.set_mode((SIZE, SIZE))
@@ -38,9 +39,9 @@ class Tile(pygame.sprite.Sprite):
 
 
 class Pole(Tile):
-    def __init__(self, x, y, sprites):
+    def __init__(self, x, y, sprites, cell_size):
         super().__init__(x, y, sprites)
-        self.image = pygame.transform.scale(load_image('pole.png'), (30, 30))
+        self.image = pygame.transform.scale(load_image('pole.png'), (cell_size, cell_size))
         self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
 
 
@@ -171,48 +172,72 @@ def resources_screen(resources):
         intro_rect.y = 15
         screen.blit(string_rendered, intro_rect)
 
-def builder_screen(builder):
-    global builder_sprites
-    if builder.is_clicked:
-        hammer = pygame.transform.scale(load_image('hammer.png'), (50, 50))
-        image = pygame.transform.scale(load_image('frame.png'), (300, 100))
-        frame = pygame.sprite.Sprite(builder_sprites)
-        build = pygame.sprite.Sprite(builder_sprites)
-        build.image = hammer
-        build.rect = build.image.get_rect()
-        build.rect.x = SIZE // 2 - 100
-        build.rect.y = SIZE + 25
-        frame.image = image
-        frame.rect = frame.image.get_rect()
-        frame.rect.x = SIZE // 2 - 150
-        frame.rect.y = SIZE
-        builder_sprites.draw(screen)
-        clock = pygame.time.Clock()
-        while frame.rect.y > SIZE - 100:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    terminate()
-            frame.rect.y -= 600 / FPS
-            build.rect.y -= 600 / FPS
-            builder_sprites.draw(screen)
-            pygame.display.flip()
-            clock.tick(FPS)
-        if frame.rect.y != SIZE - 100:
-            frame.rect.y = SIZE - 100
-            build.rect.y = SIZE - 75
+
+def human_screen(human):
+    if human.is_clicked:
+        global human_sprites
+        font = pygame.font.Font(None, 30)
+        if human.name == 'Строитель':
+            hammer = pygame.transform.scale(load_image('hammer.png'), (50, 50))
+            image = pygame.transform.scale(load_image('frame.png'), (300, 100))
+            frame = pygame.sprite.Sprite(human_sprites)
+            build = pygame.sprite.Sprite(human_sprites)
+            build.image = hammer
+            build.rect = build.image.get_rect()
+            build.rect.x = SIZE // 2 - 100
+            build.rect.y = SIZE + 25
+            frame.image = image
+            frame.rect = frame.image.get_rect()
+            frame.rect.x = SIZE // 2 - 150
+            frame.rect.y = SIZE
+            clock = pygame.time.Clock()
+            while frame.rect.y > SIZE - 100:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        terminate()
+                frame.rect.y -= 600 / FPS
+                build.rect.y -= 600 / FPS
+                if frame.rect.y < SIZE - 100:
+                    # intro_rect.y = SIZE - 100
+                    frame.rect.y = SIZE - 100
+                    build.rect.y = SIZE - 75
+                human_sprites.draw(screen)
+                pygame.display.flip()
+                clock.tick(FPS)
+        else:
+            name = 'Развечик'
+            string_rendered = font.render(name, 1, pygame.Color('white'))
+            image = pygame.transform.scale(load_image('frame.png'), (300, 100))
+            frame = pygame.sprite.Sprite(human_sprites)
+            frame.image = image
+            frame.rect = frame.image.get_rect()
+            frame.rect.x = SIZE // 2 - 150
+            frame.rect.y = SIZE
+            clock = pygame.time.Clock()
+            while frame.rect.y > SIZE - 100:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        terminate()
+                frame.rect.y -= 600 / FPS
+                if frame.rect.y < SIZE - 100:
+                    frame.rect.y = SIZE - 100
+                human_sprites.draw(screen)
+                screen.blit(string_rendered, intro_rect)
+                pygame.display.flip()
+                clock.tick(FPS)
     else:
-        builder_sprites = pygame.sprite.Group()
+        human_sprites = pygame.sprite.Group()
 
 
 class Board():
     def __init__(self):
-        xiron, yiron, xtree, ytree, xwater, ywater, xfood, yfood = [randrange(SIZE // 40 // 2 - 4, SIZE // 40 // 2 + 4)
-                                                                    for i in range(8)]
+        self.side_size = int(SIZE // 30)
+        self.cell_size = 30
         self.width = self.height = BOARD_SIZE
-        self.list = [[0 for i in range(self.width)] for j in range(self.height)]
+        self.list = [[0 for _ in range(self.width)] for _ in range(self.height)]
         for i in range(self.width):
             for j in range(self.height):
-                self.list[i][j] = Pole(i, j, all_sprites)
+                self.list[i][j] = Pole(i, j, all_sprites, self.cell_size)
         for x_iron in range(0, self.width, 4):
             for y_iron in range(0, self.width, 3):
                 for x in range(randrange(2, 4)):
@@ -243,21 +268,20 @@ class Board():
                             continue
                         self.list[x * (x_food + 1)][y * (y_food + 1)] = Resource(x * (x_food + 1), y * (y_food + 1),
                                                                                  'food', all_sprites)
-        self.list[SIZE // 30 // 2][SIZE // 30 // 2] = Castle(SIZE // 30 // 2, SIZE // 30 // 2, all_sprites)
-        self.side_size = int(SIZE // 30)
-        self.cell_size = 30
+
         self.top = (SIZE - self.width * self.cell_size) / 2
         self.left = (SIZE - self.width * self.cell_size) / 2
         self.units = []
-        self.units.append(Builder(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
-        self.units.append(Scout(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
+        self.units.append(Builder(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
+                                  randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
+        self.units.append(Scout(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
+                                randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
 
     def get_cell(self, mouse_pos):
         for i in range(self.height):
             for j in range(self.width):
-                if mouse_pos[0] >= self.top + j * self.cell_size and mouse_pos[1] >= self.top + i * self.cell_size and \
-                        mouse_pos[0] <= self.cell_size + self.top + j * self.cell_size and \
-                        mouse_pos[1] <= self.cell_size + self.top + i * self.cell_size:
+                if self.top + j * self.cell_size <= mouse_pos[0] <= self.cell_size + self.top + j * self.cell_size and\
+                        self.top + i * self.cell_size <= mouse_pos[1] <= self.cell_size + self.top + i * self.cell_size:
                     return (i, j)
 
     def on_click(self, cell_coords, event):
@@ -267,7 +291,6 @@ class Board():
                     i.click()
                 else:
                     i.unclick()
-                    #print(i)
         if event.button == 3:
             for i in self.units:
                 print(i)
@@ -281,11 +304,13 @@ class Board():
         self.on_click(cell, event)
 
     def render(self):
+        self.top = (SIZE - self.width * self.cell_size) / 2
+        self.left = (SIZE - self.width * self.cell_size) / 2
         for i in range(self.height):
             for j in range(self.width):
-                pygame.draw.rect(screen, (255, 255, 255), (self.top + j * self.cell_size,
-                                                           self.top + i * self.cell_size,
-                                                           self.cell_size, self.cell_size), 1)
+                pygame.draw.rect(screen, (255, 255, 255), (
+                self.top + j * self.cell_size, self.top + i * self.cell_size, self.cell_size, self.cell_size), 1)
+
 
 
 class Human(pygame.sprite.Sprite):
@@ -304,9 +329,6 @@ class Human(pygame.sprite.Sprite):
         self.board.list[self.x][self.y] = 'human'
         self.board.list[x][y] = 'human'
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
-
-    def unclick(self):
-        self.is_clicked = False
 
     def can_move(self, coords):
         x = coords[0]
@@ -343,17 +365,12 @@ class Human(pygame.sprite.Sprite):
                 return True
 
     def click(self):
-        '''if self.is_clicked:
-            self.is_clicked = False
-        else:'''
         self.is_clicked = True
-        for i in self.board.list:
-            for j in i:
-                for tile in j:
-                    if tile.__class__.__name__ == 'Builder':
-                        tile.unclick()
-                    if tile.__class__.__name__ == 'Scout':
-                        tile.unclick()
+        human_screen(self)
+
+    def unclick(self):
+        self.is_clicked = True
+        human_screen(self)
 
     def get_coords(self):
         return self.x, self.y
@@ -365,21 +382,7 @@ class Builder(Human):
         self.image = load_image('player_stand.png')
         self.image = pygame.transform.scale(self.image, (30, 30))
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
-
-    def click(self):
-        '''if self.is_clicked:
-            self.is_clicked = False
-        else:'''
-        self.is_clicked = True
-        for i in self.board.list:
-            for j in self.board.list:
-                for tile in j:
-                    if tile.__class__.__name__ == 'Builder':
-                        tile.unclick()
-                    if tile.__class__.__name__ == 'Scout':
-                        tile.unclick()
-        builder_screen(self)
-
+        self.name = 'Строитель'
 
     def can_move(self, coords):
         x = coords[0]
@@ -422,12 +425,7 @@ class Scout(Human):
         self.image = load_image('scout.png')
         self.image = pygame.transform.scale(self.image, (30, 30))
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
-
-    def click(self):
-        '''if self.is_clicked:
-            self.is_clicked = False
-        else:'''
-        self.is_clicked = True
+        self.name = 'Разведчик'
 
     def can_move(self, coords):
         x = coords[0]
@@ -438,6 +436,9 @@ class Scout(Human):
             return False
 
 
+
+
+
 if __name__ == '__main__':
     pygame.init()
     SIZE, BOARD_SIZE, TOPLEFT = start_screen()
@@ -445,24 +446,32 @@ if __name__ == '__main__':
     all_sprites = pygame.sprite.Group()
     tiles_group = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
-    builder_sprites = pygame.sprite.Group()
+    human_sprites = pygame.sprite.Group()
     resources_sprites = pygame.sprite.Group()
     board = Board()
+    camera = Camera(board)
     clock = pygame.time.Clock()
     running = True
     screen.fill((0, 0, 0))
     player = Player()
+    plus = 0
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
+                print(event.button)
+                if event.button == 5:
+                    camera.zoom('-')
+                if event.button == 4:
+                    camera.zoom('+')
                 board.get_click(event.pos, event)
         fon_paint()
         all_sprites.draw(screen)
         board.render()
-        builder_sprites.draw(screen)
+        '''human_sprites.draw(screen)
         resources_screen(player.resources)
         resources_sprites.draw(screen)
-        player_group.draw(screen)
+        player_group.draw(screen)'''
         pygame.display.flip()
+        clock.tick(FPS)
