@@ -213,8 +213,6 @@ def builder_screen(builder):
 
 class Board():
     def __init__(self):
-        xiron, yiron, xtree, ytree, xwater, ywater, xfood, yfood = [randrange(SIZE // 40 // 2 - 4, SIZE // 40 // 2 + 4)
-                                                                    for i in range(8)]
         self.width = self.height = BOARD_SIZE
         self.list = [[0 for i in range(self.width)] for j in range(self.height)]
         for i in range(self.width):
@@ -250,8 +248,8 @@ class Board():
                             continue
                         self.list[x * (x_food + 1)][y * (y_food + 1)] = Resource(x * (x_food + 1), y * (y_food + 1),
                                                                                  'food', all_sprites)
-        self.list[SIZE // 30 // 2][SIZE // 30 // 2] = Castle(SIZE // 30 // 2, SIZE // 30 // 2, all_sprites)
         self.side_size = int(SIZE // 30)
+        print(self.side_size)
         self.cell_size = 30
         self.top = (SIZE - self.width * self.cell_size) / 2
         self.left = (SIZE - self.width * self.cell_size) / 2
