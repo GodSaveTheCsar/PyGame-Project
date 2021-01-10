@@ -3,7 +3,7 @@ import sys
 from PyQt5 import uic  # Импортируем uic
 from PyQt5.QtWidgets import QApplication, QMainWindow
 import os
-from random import randrange
+from random import randrange, randint
 
 pygame.init()
 SIZE = 1000
@@ -56,15 +56,14 @@ class Castle(Tile):
 class Player:
     def __init__(self):
         self.resources = {
-            'wood': 0,
+            'tree': 0,
             'iron': 0,
             'jewelry': 0,
             'food': 0
         }
 
     def update_resources(self, name, val):
-        self.resourses[name] += val
-
+        self.resources[name] += val
 
 class Resource(Tile):
     def __init__(self, x, y, name, sprites):
@@ -72,7 +71,7 @@ class Resource(Tile):
         self.x = x
         self.y = y
         self.name = name
-        self.is_mining = False
+        self.upgraded = False
         if name == 'tree':
             self.image = pygame.transform.scale(load_image('tree.png'), (30, 30))
             self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
@@ -82,15 +81,30 @@ class Resource(Tile):
         if name == 'food':
             self.image = pygame.transform.scale(load_image('food.png'), (30, 30))
             self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
-        if name == 'wood':
-            self.image = load_image('wood.png')
-            self.image = pygame.transform.scale(self.image, (28, 28))
 
     def mine(self):
-        if not self.is_mining:
-            self.is_mining = True
-            print('добывается')
+        player.update_resources(self.name, random.randint(1, 100))
+        del self
 
+    def is_upgraded(self):
+        return self.upgraded
+
+    def upgrade(self):
+        if name == 'tree':
+            self.name = 'tree_up'
+            board.passive['tree'] += 2
+            self.image = pygame.transform.scale(load_image('tree_up.png'), (30, 30))
+            self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
+        if name == 'iron':
+            self.name = 'iron_up'
+            board.passive['iron'] += 2
+            self.image = pygame.transform.scale(load_image('iron_up.png'), (30, 30))
+            self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
+        if name == 'food':
+            self.name = 'food_up'
+            board.passive['food'] += 2
+            self.image = pygame.transform.scale(load_image('food_up.png'), (30, 30))
+            self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
 
 class MyWidget(QMainWindow):
     def __init__(self):
@@ -206,6 +220,12 @@ def builder_screen(builder):
 
 class Board():
     def __init__(self):
+        self.passive = {
+            'tree': 0,
+            'iron': 0,
+            'jewelry': 0,
+            'food': 0
+        }
         xiron, yiron, xtree, ytree, xwater, ywater, xfood, yfood = [randrange(SIZE // 40 // 2 - 4, SIZE // 40 // 2 + 4)
                                                                     for i in range(8)]
         self.width = self.height = BOARD_SIZE
@@ -252,6 +272,9 @@ class Board():
         self.units.append(Builder(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
         self.units.append(Scout(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
 
+    def passive_upd(self, name, zn):
+        self.passive[name] += zn
+
     def get_cell(self, mouse_pos):
         for i in range(self.height):
             for j in range(self.width):
@@ -267,12 +290,14 @@ class Board():
                     i.click()
                 else:
                     i.unclick()
-                    #print(i)
         if event.button == 3:
             for i in self.units:
                 print(i)
                 if i.is_clicked and i.can_move(cell_coords):
                     i.move(cell_coords[0], cell_coords[1])
+                    player.update_resources('tree', self.passive['tree'])
+                    player.update_resources('iron', self.passive['iron'])
+                    player.update_resources('food', self.passive['food'])
                     break
         print(cell_coords)
 
@@ -360,6 +385,13 @@ class Builder(Human):
         self.is_clicked = True
         builder_screen(self)
 
+    def build(self):
+        if self.board.list[self.x][self.y].__class__.__name__ == 'Resource' and not self.board.list[self.x][self.y].is_upgraded():
+            self.board.list[self.x][self.y].upgrade()
+
+    def mine(self):
+        if self.board.list[self.x][self.y].__class__.__name__ == 'Resource':
+            self.board.list[self.x][self.y].mine()
 
     def can_move(self, coords):
         x = coords[0]
