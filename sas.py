@@ -343,17 +343,7 @@ class Human(pygame.sprite.Sprite):
                 return True
 
     def click(self):
-        '''if self.is_clicked:
-            self.is_clicked = False
-        else:'''
         self.is_clicked = True
-        for i in self.board.list:
-            for j in i:
-                for tile in j:
-                    if tile.__class__.__name__ == 'Builder':
-                        tile.unclick()
-                    if tile.__class__.__name__ == 'Scout':
-                        tile.unclick()
 
     def get_coords(self):
         return self.x, self.y
@@ -367,17 +357,7 @@ class Builder(Human):
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
 
     def click(self):
-        '''if self.is_clicked:
-            self.is_clicked = False
-        else:'''
         self.is_clicked = True
-        for i in self.board.list:
-            for j in self.board.list:
-                for tile in j:
-                    if tile.__class__.__name__ == 'Builder':
-                        tile.unclick()
-                    if tile.__class__.__name__ == 'Scout':
-                        tile.unclick()
         builder_screen(self)
 
 
@@ -424,9 +404,6 @@ class Scout(Human):
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
 
     def click(self):
-        '''if self.is_clicked:
-            self.is_clicked = False
-        else:'''
         self.is_clicked = True
 
     def can_move(self, coords):
