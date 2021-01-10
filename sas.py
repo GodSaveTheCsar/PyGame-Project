@@ -139,7 +139,6 @@ def start_screen():
                 terminate()
         clock.tick(FPS)
 
-
 def resources_screen(resources):
     pygame.init()
     resources_sprites = pygame.sprite.Group()
