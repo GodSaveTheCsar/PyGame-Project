@@ -1,0 +1,235 @@
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"ProjectRootManager\" version=\"2\" project-jdk-name=\"Python 3.8 (aaaaa))))\" project-jdk-type=\"Python SDK\" />\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+--- a/.idea/misc.xml	(revision 117ed579ac1e547190c9e37160860aec2801e3a2)
++++ b/.idea/misc.xml	(date 1610291559586)
+@@ -1,4 +1,4 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.8 (aaaaa))))" project-jdk-type="Python SDK" />
++  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.8" project-jdk-type="Python SDK" />
+ </project>
+\ No newline at end of file
+Index: sas.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import pygame\r\nimport sys\r\nfrom PyQt5 import uic  # Импортируем uic\r\nfrom PyQt5.QtWidgets import QApplication, QMainWindow\r\nimport os\r\nfrom random import randrange\r\n\r\npygame.init()\r\nSIZE = 1000\r\nFPS = 50\r\nCELL_SIZE = 30\r\n\r\ndef fon_paint():\r\n    fon = pygame.transform.scale(load_image('fon.jpg'), (SIZE, SIZE))\r\n    screen = pygame.display.set_mode((SIZE, SIZE))\r\n    screen.blit(fon, (0, 0))\r\n\r\n\r\ndef terminate():\r\n    pygame.quit()\r\n    sys.exit()\r\n\r\n\r\ndef load_image(name, colorkey=None):\r\n    fullname = os.path.join('data', name)\r\n    if not os.path.isfile(fullname):\r\n        print(f\"Файл с изображением '{fullname}' не найден\")\r\n        sys.exit()\r\n    image = pygame.image.load(fullname)\r\n    return image\r\n\r\n\r\nclass Tile(pygame.sprite.Sprite):\r\n    def __init__(self, x, y, sprites):\r\n        super().__init__(sprites)\r\n        self.x = x\r\n        self.y = y\r\n\r\n\r\nclass Pole(Tile):\r\n    def __init__(self, x, y, sprites):\r\n        super().__init__(x, y, sprites)\r\n        self.image = pygame.transform.scale(load_image('pole.png'), (30, 30))\r\n        self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)\r\n\r\n\r\nclass Castle(Tile):\r\n    def __init__(self, x, y, sprite):\r\n        super().__init__(x, y, sprite)\r\n        self.x = x\r\n        self.y = y\r\n        self.image = pygame.transform.scale(load_image('castle.jpg'), (30, 30))\r\n        self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)\r\n\r\n\r\nclass Player:\r\n    def __init__(self):\r\n        self.resources = {\r\n            'wood': 0,\r\n            'iron': 0,\r\n            'jewelry': 0,\r\n            'food': 0\r\n        }\r\n\r\n    def update_resources(self, name, val):\r\n        self.resourses[name] += val\r\n\r\n\r\nclass Resource(Tile):\r\n    def __init__(self, x, y, name, sprites):\r\n        super().__init__(x, y, sprites)\r\n        self.x = x\r\n        self.y = y\r\n        self.name = name\r\n        self.is_mining = False\r\n        if name == 'tree':\r\n            self.image = pygame.transform.scale(load_image('tree.png'), (30, 30))\r\n            self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)\r\n        if name == 'iron':\r\n            self.image = pygame.transform.scale(load_image('iron.png'), (30, 30))\r\n            self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)\r\n        if name == 'food':\r\n            self.image = pygame.transform.scale(load_image('food.png'), (30, 30))\r\n            self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)\r\n        if name == 'wood':\r\n            self.image = load_image('wood.png')\r\n            self.image = pygame.transform.scale(self.image, (28, 28))\r\n\r\n    def mine(self):\r\n        if not self.is_mining:\r\n            self.is_mining = True\r\n            print('добывается')\r\n\r\n\r\nclass MyWidget(QMainWindow):\r\n    def __init__(self):\r\n        global SIZE\r\n        super().__init__()\r\n        uic.loadUi('untitled.ui', self)  # Загружаем дизайн\r\n        self.is_pushed = False\r\n        self.pushButton.clicked.connect(self.run)\r\n        self.pushButton_2.clicked.connect(self.run)\r\n        self.pushButton_3.clicked.connect(self.run)\r\n\r\n    def run(self):\r\n        size = int(self.sender().text().split('(')[1][0:2])\r\n        self.size = size * 30 + 180\r\n        self.board_size = int(self.sender().text().split('(')[1][0:2])\r\n        self.topleft = int((self.size - size * CELL_SIZE) / 2)\r\n        self.is_pushed = True\r\n        self.close()\r\n\r\n\r\ndef start_screen():\r\n    pygame.init()\r\n    clock = pygame.time.Clock()\r\n    app = QApplication(sys.argv)\r\n    ex = MyWidget()\r\n    ex.show()\r\n    while True:\r\n        if ex.is_pushed:\r\n            return ex.size, ex.board_size, ex.topleft\r\n        for event in pygame.event.get():\r\n            if event.type == pygame.QUIT:\r\n                terminate()\r\n        clock.tick(FPS)\r\n\r\n\r\ndef resources_screen(resources):\r\n    pygame.init()\r\n    resources_sprites = pygame.sprite.Group()\r\n    food = pygame.transform.scale(load_image('food_icon.png'), (50, 50))\r\n    image = load_image('frame_1.png')\r\n    iron = pygame.transform.scale(load_image('iron_icon.png'), (50, 50))\r\n    wood = pygame.transform.scale(load_image('wood_icon.png'), (50, 50))\r\n    brilliant = pygame.transform.scale(load_image('brilliant_icon.png'), (40, 50))\r\n    frame = pygame.sprite.Sprite(resources_sprites)\r\n    wood_i = pygame.sprite.Sprite(resources_sprites)\r\n    iron_i = pygame.sprite.Sprite(resources_sprites)\r\n    food_i = pygame.sprite.Sprite(resources_sprites)\r\n    brilliant_i = pygame.sprite.Sprite(resources_sprites)\r\n    frame.image = image\r\n    frame.rect = frame.image.get_rect()\r\n    frame.rect.x = 0\r\n    frame.rect.y = 0\r\n    iron_i.image = iron\r\n    iron_i.rect = iron_i.image.get_rect()\r\n    iron_i.rect.x = 0\r\n    iron_i.rect.y = 0\r\n    food_i.image = food\r\n    food_i.rect = food_i.image.get_rect()\r\n    food_i.rect.x = SIZE // 4\r\n    food_i.rect.y = 0\r\n    wood_i.image = wood\r\n    wood_i.rect = wood_i.image.get_rect()\r\n    wood_i.rect.x = 2 * SIZE // 4\r\n    wood_i.rect.y = 0\r\n    brilliant_i.image = brilliant\r\n    brilliant_i.rect = brilliant_i.image.get_rect()\r\n    brilliant_i.rect.x = 3 * SIZE // 4\r\n    brilliant_i.rect.y = 0\r\n    font = pygame.font.Font(None, 30)\r\n    resources_sprites.draw(screen)\r\n    count = -1\r\n    for i in resources:\r\n        count += 1\r\n        string_rendered = font.render(str(resources[i]), 1, pygame.Color('black'))\r\n        intro_rect = string_rendered.get_rect()\r\n        text_coord = count * SIZE // 4 + 50\r\n        intro_rect.left = text_coord\r\n        intro_rect.y = 15\r\n        screen.blit(string_rendered, intro_rect)\r\n\r\n\r\ndef builder_screen(builder):\r\n    global builder_sprites\r\n    if builder.is_clicked:\r\n        hammer = pygame.transform.scale(load_image('hammer.png'), (50, 50))\r\n        image = pygame.transform.scale(load_image('frame.png'), (300, 100))\r\n        frame = pygame.sprite.Sprite(builder_sprites)\r\n        build = pygame.sprite.Sprite(builder_sprites)\r\n        build.image = hammer\r\n        build.rect = build.image.get_rect()\r\n        build.rect.x = SIZE // 2 - 100\r\n        build.rect.y = SIZE + 25\r\n        frame.image = image\r\n        frame.rect = frame.image.get_rect()\r\n        frame.rect.x = SIZE // 2 - 150\r\n        frame.rect.y = SIZE\r\n        builder_sprites.draw(screen)\r\n        clock = pygame.time.Clock()\r\n        while frame.rect.y > SIZE - 100:\r\n            for event in pygame.event.get():\r\n                if event.type == pygame.QUIT:\r\n                    terminate()\r\n            frame.rect.y -= 600 / FPS\r\n            build.rect.y -= 600 / FPS\r\n            builder_sprites.draw(screen)\r\n            pygame.display.flip()\r\n            clock.tick(FPS)\r\n        if frame.rect.y != SIZE - 100:\r\n            frame.rect.y = SIZE - 100\r\n            build.rect.y = SIZE - 75\r\n    else:\r\n        builder_sprites = pygame.sprite.Group()\r\n\r\n\r\nclass Board():\r\n    def __init__(self):\r\n        self.width = self.height = BOARD_SIZE\r\n        self.list = [[0 for i in range(self.width)] for j in range(self.height)]\r\n        for i in range(self.width):\r\n            for j in range(self.height):\r\n                self.list[i][j] = Pole(i, j, all_sprites)\r\n        for x_iron in range(0, self.width, 4):\r\n            for y_iron in range(0, self.width, 3):\r\n                for x in range(randrange(2, 4)):\r\n                    for y in range(randrange(2, 4)):\r\n                        if x * (x_iron + 1) >= self.width or y * (y_iron + 1) >= self.width:\r\n                            continue\r\n                        if self.list[x * (x_iron + 1)][y * (y_iron + 1)].__class__.__name__ == 'Resource':\r\n                            continue\r\n                        self.list[x * (x_iron + 1)][y * (y_iron + 1)] = Resource(x * (x_iron + 1), y * (y_iron + 1),\r\n                                                                                 'iron', all_sprites)\r\n        for x_tree in range(0, self.width, 2):\r\n            for y_tree in range(0, self.width, 2):\r\n                for x in range(randrange(2, 4)):\r\n                    for y in range(randrange(1, 4)):\r\n                        if x * (x_tree + 1) >= self.width or y * (y_tree + 1) >= self.width:\r\n                            continue\r\n                        if self.list[x * (x_tree + 1)][y * (y_tree + 1)].__class__.__name__ == 'Resource':\r\n                            continue\r\n                        self.list[x * (x_tree + 1)][y * (y_tree + 1)] = Resource(x * (x_tree + 1), y * (y_tree + 1),\r\n                                                                                 'tree', all_sprites)\r\n        for x_food in range(0, self.width, 2):\r\n            for y_food in range(0, self.width, 2):\r\n                for x in range(3):\r\n                    for y in range(randrange(1, 3)):\r\n                        if x * (x_food + 1) >= self.width or y * (y_food + 1) >= self.width:\r\n                            continue\r\n                        if self.list[x * (x_food + 1)][y * (y_food + 1)].__class__.__name__ == 'Resource':\r\n                            continue\r\n                        self.list[x * (x_food + 1)][y * (y_food + 1)] = Resource(x * (x_food + 1), y * (y_food + 1),\r\n                                                                                 'food', all_sprites)\r\n        self.side_size = int(SIZE // 30)\r\n        self.cell_size = 30\r\n        self.top = (SIZE - self.width * self.cell_size) / 2\r\n        self.left = (SIZE - self.width * self.cell_size) / 2\r\n        self.units = []\r\n        self.units.append(Builder(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))\r\n        self.units.append(Scout(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))\r\n\r\n    def get_cell(self, mouse_pos):\r\n        for i in range(self.height):\r\n            for j in range(self.width):\r\n                if mouse_pos[0] >= self.top + j * self.cell_size and mouse_pos[1] >= self.top + i * self.cell_size and \\\r\n                        mouse_pos[0] <= self.cell_size + self.top + j * self.cell_size and \\\r\n                        mouse_pos[1] <= self.cell_size + self.top + i * self.cell_size:\r\n                    return (i, j)\r\n\r\n    def on_click(self, cell_coords, event):\r\n        if event.button == 1:\r\n            for i in self.units:\r\n                if i.get_coords() == cell_coords:\r\n                    i.click()\r\n                else:\r\n                    i.unclick()\r\n                    #print(i)\r\n        if event.button == 3:\r\n            for i in self.units:\r\n                print(i)\r\n                if i.is_clicked and i.can_move(cell_coords):\r\n                    i.move(cell_coords[0], cell_coords[1])\r\n                    break\r\n        print(cell_coords)\r\n\r\n    def get_click(self, mouse_pos, event):\r\n        cell = self.get_cell(mouse_pos)\r\n        self.on_click(cell, event)\r\n\r\n    def render(self):\r\n        for i in range(self.height):\r\n            for j in range(self.width):\r\n                pygame.draw.rect(screen, (255, 255, 255), (self.top + j * self.cell_size,\r\n                                                           self.top + i * self.cell_size,\r\n                                                           self.cell_size, self.cell_size), 1)\r\n\r\n\r\nclass Human(pygame.sprite.Sprite):\r\n    def __init__(self, pos_x, pos_y, board):\r\n        super().__init__(player_group, all_sprites)\r\n        self.x = pos_x\r\n        self.y = pos_y\r\n        self.board = board\r\n        self.cell_size = 30\r\n        self.is_clicked = False\r\n        self.board.list[pos_x][pos_y] = 'human'\r\n\r\n    def move(self, x, y):\r\n        self.x = x\r\n        self.y = y\r\n        self.board.list[self.x][self.y] = 'human'\r\n        self.board.list[x][y] = 'human'\r\n        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)\r\n\r\n    def unclick(self):\r\n        self.is_clicked = False\r\n\r\n    def can_move(self, coords):\r\n        x = coords[0]\r\n        y = coords[1]\r\n        if x == self.x:\r\n            if y == self.y:\r\n                return False\r\n            if y + 1 == self.y or y - 1 == self.y:\r\n                return True\r\n        if y == self.y:\r\n            if x == self.x:\r\n                return False\r\n            if x + 1 == self.x or x - 1 == self.x:\r\n                return True\r\n        if x + 1 == self.x:\r\n            if y == self.y:\r\n                return False\r\n            if y + 1 == self.y or y - 1 == self.y:\r\n                return True\r\n        if y + 1 == self.y:\r\n            if x == self.x:\r\n                return False\r\n            if x + 1 == self.x or x - 1 == self.x:\r\n                return True\r\n        if x - 1 == self.x:\r\n            if y == self.y:\r\n                return False\r\n            if y + 1 == self.y or y - 1 == self.y:\r\n                return True\r\n        if y - 1 == self.y:\r\n            if x == self.x:\r\n                return False\r\n            if x + 1 == self.x or x - 1 == self.x:\r\n                return True\r\n\r\n    def click(self):\r\n        '''if self.is_clicked:\r\n            self.is_clicked = False\r\n        else:'''\r\n        self.is_clicked = True\r\n        for i in self.board.list:\r\n            for j in i:\r\n                for tile in j:\r\n                    if tile.__class__.__name__ == 'Builder':\r\n                        tile.unclick()\r\n                    if tile.__class__.__name__ == 'Scout':\r\n                        tile.unclick()\r\n\r\n    def get_coords(self):\r\n        return self.x, self.y\r\n\r\n\r\nclass Builder(Human):\r\n    def __init__(self, pos_x, pos_y, board):\r\n        super().__init__(pos_x, pos_y, board)\r\n        self.image = load_image('player_stand.png')\r\n        self.image = pygame.transform.scale(self.image, (30, 30))\r\n        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)\r\n\r\n    def click(self):\r\n        '''if self.is_clicked:\r\n            self.is_clicked = False\r\n        else:'''\r\n        self.is_clicked = True\r\n        for i in self.board.list:\r\n            for j in self.board.list:\r\n                for tile in j:\r\n                    if tile.__class__.__name__ == 'Builder':\r\n                        tile.unclick()\r\n                    if tile.__class__.__name__ == 'Scout':\r\n                        tile.unclick()\r\n        builder_screen(self)\r\n\r\n    def can_move(self, coords):\r\n        x = coords[0]\r\n        y = coords[1]\r\n        if x == self.x:\r\n            if y == self.y:\r\n                return False\r\n            if y + 1 == self.y or y - 1 == self.y:\r\n                return (x, y) not in [i.get_coords() for i in self.board.units]\r\n        if y == self.y:\r\n            if x == self.x:\r\n                return False\r\n            if x + 1 == self.x or x - 1 == self.x:\r\n                return (x, y) not in [i.get_coords() for i in self.board.units]\r\n        if x + 1 == self.x:\r\n            if y == self.y:\r\n                return False\r\n            if y + 1 == self.y or y - 1 == self.y:\r\n                return (x, y) not in [i.get_coords() for i in self.board.units]\r\n        if y + 1 == self.y:\r\n            if x == self.x:\r\n                return False\r\n            if x + 1 == self.x or x - 1 == self.x:\r\n                return (x, y) not in [i.get_coords() for i in self.board.units]\r\n        if x - 1 == self.x:\r\n            if y == self.y:\r\n                return False\r\n            if y + 1 == self.y or y - 1 == self.y:\r\n                return (x, y) not in [i.get_coords() for i in self.board.units]\r\n        if y - 1 == self.y:\r\n            if x == self.x:\r\n                return False\r\n            if x + 1 == self.x or x - 1 == self.x:\r\n                return (x, y) not in [i.get_coords() for i in self.board.units]\r\n\r\n\r\nclass Scout(Human):\r\n    def __init__(self, x, y, board):\r\n        super().__init__(x, y, board)\r\n        self.image = load_image('scout.png')\r\n        self.image = pygame.transform.scale(self.image, (30, 30))\r\n        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)\r\n\r\n    def click(self):\r\n        '''if self.is_clicked:\r\n            self.is_clicked = False\r\n        else:'''\r\n        self.is_clicked = True\r\n\r\n    def can_move(self, coords):\r\n        x = coords[0]\r\n        y = coords[1]\r\n        if abs(self.x - x) <= 2 and abs(self.y - y) <= 2 and (x, y) not in [i.get_coords() for i in self.board.units]:\r\n            return True\r\n        else:\r\n            return False\r\n\r\n\r\nclass Camera:\r\n    # зададим начальный сдвиг камеры\r\n    def __init__(self, board):\r\n        self.board = board\r\n\r\n    def zo1om(self, plus):\r\n        self.board.cell_size = int(eval(str(self.board.cell_size), plus, '10'))\r\n\r\n\r\nif __name__ == '__main__':\r\n    pygame.init()\r\n    SIZE, BOARD_SIZE, TOPLEFT = start_screen()\r\n    screen = pygame.display.set_mode((SIZE, SIZE))\r\n    all_sprites = pygame.sprite.Group()\r\n    tiles_group = pygame.sprite.Group()\r\n    player_group = pygame.sprite.Group()\r\n    builder_sprites = pygame.sprite.Group()\r\n    resources_sprites = pygame.sprite.Group()\r\n    board = Board()\r\n    clock = pygame.time.Clock()\r\n    running = True\r\n    screen.fill((0, 0, 0))\r\n    player = Player()\r\n    camera = Camera(board)\r\n    plus = 0\r\n    while running:\r\n        for event in pygame.event.get():\r\n            if event.type == pygame.QUIT:\r\n                running = False\r\n            if event.type == pygame.MOUSEBUTTONDOWN:\r\n                if event.button == 5:\r\n                    plus = '-'\r\n                    camera.zo1om(plus)\r\n                elif event.button == 4:\r\n                    plus = '+'\r\n                    camera.zo1om(plus)\r\n                board.get_click(event.pos, event)\r\n        fon_paint()\r\n        all_sprites.draw(screen)\r\n        board.render()\r\n        builder_sprites.draw(screen)\r\n        resources_screen(player.resources)\r\n        resources_sprites.draw(screen)\r\n        player_group.draw(screen)\r\n        pygame.display.flip()\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/sas.py b/sas.py
+--- a/sas.py	(revision 117ed579ac1e547190c9e37160860aec2801e3a2)
++++ b/sas.py	(date 1610302096168)
+@@ -172,37 +172,71 @@
+         screen.blit(string_rendered, intro_rect)
+ 
+ 
+-def builder_screen(builder):
+-    global builder_sprites
+-    if builder.is_clicked:
+-        hammer = pygame.transform.scale(load_image('hammer.png'), (50, 50))
+-        image = pygame.transform.scale(load_image('frame.png'), (300, 100))
+-        frame = pygame.sprite.Sprite(builder_sprites)
+-        build = pygame.sprite.Sprite(builder_sprites)
+-        build.image = hammer
+-        build.rect = build.image.get_rect()
+-        build.rect.x = SIZE // 2 - 100
+-        build.rect.y = SIZE + 25
+-        frame.image = image
+-        frame.rect = frame.image.get_rect()
+-        frame.rect.x = SIZE // 2 - 150
+-        frame.rect.y = SIZE
+-        builder_sprites.draw(screen)
+-        clock = pygame.time.Clock()
+-        while frame.rect.y > SIZE - 100:
+-            for event in pygame.event.get():
+-                if event.type == pygame.QUIT:
+-                    terminate()
+-            frame.rect.y -= 600 / FPS
+-            build.rect.y -= 600 / FPS
+-            builder_sprites.draw(screen)
+-            pygame.display.flip()
+-            clock.tick(FPS)
+-        if frame.rect.y != SIZE - 100:
+-            frame.rect.y = SIZE - 100
+-            build.rect.y = SIZE - 75
++def human_screen(human):
++    if human.is_clicked:
++        global human_sprites
++        font = pygame.font.Font(None, 30)
++        if human.name == 'Строитель':
++            name = 'Строитель'
++            '''string_rendered = font.render(name, 1, pygame.Color('white'))
++            intro_rect = string_rendered.get_rect()
++            intro_rect.x = SIZE // 2 - 150 + (SIZE // 2 - 150) // 2
++            intro_rect.y = SIZE'''
++            hammer = pygame.transform.scale(load_image('hammer.png'), (50, 50))
++            image = pygame.transform.scale(load_image('frame.png'), (300, 100))
++            frame = pygame.sprite.Sprite(human_sprites)
++            build = pygame.sprite.Sprite(human_sprites)
++            build.image = hammer
++            build.rect = build.image.get_rect()
++            build.rect.x = SIZE // 2 - 100
++            build.rect.y = SIZE + 25
++            frame.image = image
++            frame.rect = frame.image.get_rect()
++            frame.rect.x = SIZE // 2 - 150
++            frame.rect.y = SIZE
++            clock = pygame.time.Clock()
++            while frame.rect.y > SIZE - 100:
++                for event in pygame.event.get():
++                    if event.type == pygame.QUIT:
++                        terminate()
++                #intro_rect.y -= 600 / FPS
++                frame.rect.y -= 600 / FPS
++                build.rect.y -= 600 / FPS
++                if frame.rect.y < SIZE - 100:
++                    #intro_rect.y = SIZE - 100
++                    frame.rect.y = SIZE - 100
++                    build.rect.y = SIZE - 75
++                human_sprites.draw(screen)
++                #screen.blit(string_rendered, intro_rect)
++                pygame.display.flip()
++                clock.tick(FPS)
++        else:
++            name = 'Развечик'
++            string_rendered = font.render(name, 1, pygame.Color('white'))
++            image = pygame.transform.scale(load_image('frame.png'), (300, 100))
++            name = load_image('name_scout.png')
++            intro = pygame.sprite.Sprite(human_sprites)
++            frame = pygame.sprite.Sprite(human_sprites)
++            frame.image = image
++            frame.rect = frame.image.get_rect()
++            frame.rect.x = SIZE // 2 - 150
++            frame.rect.y = SIZE
++            clock = pygame.time.Clock()
++            while frame.rect.y > SIZE - 100:
++                for event in pygame.event.get():
++                    if event.type == pygame.QUIT:
++                        terminate()
++                frame.rect.y -= 600 / FPS
++                intro_rect.y = 600 / FPS
++                if frame.rect.y < SIZE - 100:
++                    intro_rect.y = SIZE - 100
++                    frame.rect.y = SIZE - 100
++                human_sprites.draw(screen)
++                screen.blit(string_rendered, intro_rect)
++                pygame.display.flip()
++                clock.tick(FPS)
+     else:
+-        builder_sprites = pygame.sprite.Group()
++        human_sprites = pygame.sprite.Group()
+ 
+ 
+ class Board():
+@@ -265,10 +299,8 @@
+                     i.click()
+                 else:
+                     i.unclick()
+-                    #print(i)
+         if event.button == 3:
+             for i in self.units:
+-                print(i)
+                 if i.is_clicked and i.can_move(cell_coords):
+                     i.move(cell_coords[0], cell_coords[1])
+                     break
+@@ -305,6 +337,7 @@
+ 
+     def unclick(self):
+         self.is_clicked = False
++        human_screen(self)
+ 
+     def can_move(self, coords):
+         x = coords[0]
+@@ -341,17 +374,8 @@
+                 return True
+ 
+     def click(self):
+-        '''if self.is_clicked:
+-            self.is_clicked = False
+-        else:'''
+         self.is_clicked = True
+-        for i in self.board.list:
+-            for j in i:
+-                for tile in j:
+-                    if tile.__class__.__name__ == 'Builder':
+-                        tile.unclick()
+-                    if tile.__class__.__name__ == 'Scout':
+-                        tile.unclick()
++        human_screen(self)
+ 
+     def get_coords(self):
+         return self.x, self.y
+@@ -363,20 +387,7 @@
+         self.image = load_image('player_stand.png')
+         self.image = pygame.transform.scale(self.image, (30, 30))
+         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
+-
+-    def click(self):
+-        '''if self.is_clicked:
+-            self.is_clicked = False
+-        else:'''
+-        self.is_clicked = True
+-        for i in self.board.list:
+-            for j in self.board.list:
+-                for tile in j:
+-                    if tile.__class__.__name__ == 'Builder':
+-                        tile.unclick()
+-                    if tile.__class__.__name__ == 'Scout':
+-                        tile.unclick()
+-        builder_screen(self)
++        self.name = 'Строитель'
+ 
+     def can_move(self, coords):
+         x = coords[0]
+@@ -419,13 +430,7 @@
+         self.image = load_image('scout.png')
+         self.image = pygame.transform.scale(self.image, (30, 30))
+         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
+-
+-    def click(self):
+-        '''if self.is_clicked:
+-            self.is_clicked = False
+-        else:'''
+-        self.is_clicked = True
+-
++        self.name = 'Разведчик'
+     def can_move(self, coords):
+         x = coords[0]
+         y = coords[1]
+@@ -451,7 +456,7 @@
+     all_sprites = pygame.sprite.Group()
+     tiles_group = pygame.sprite.Group()
+     player_group = pygame.sprite.Group()
+-    builder_sprites = pygame.sprite.Group()
++    human_sprites = pygame.sprite.Group()
+     resources_sprites = pygame.sprite.Group()
+     board = Board()
+     clock = pygame.time.Clock()
+@@ -464,7 +469,7 @@
+         for event in pygame.event.get():
+             if event.type == pygame.QUIT:
+                 running = False
+-            if event.type == pygame.MOUSEBUTTONDOWN:
++            if event.type == pygame.MOUSEBUTTONUP:
+                 if event.button == 5:
+                     plus = '-'
+                     camera.zo1om(plus)
+@@ -475,8 +480,8 @@
+         fon_paint()
+         all_sprites.draw(screen)
+         board.render()
+-        builder_sprites.draw(screen)
++        human_sprites.draw(screen)
+         resources_screen(player.resources)
+-        resources_sprites.draw(screen)
+-        player_group.draw(screen)
+-        pygame.display.flip()
++        #resources_sprites.draw(screen)
++        #player_group.draw(screen)
++        pygame.display.update()
