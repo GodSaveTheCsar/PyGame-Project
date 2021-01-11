@@ -5,10 +5,10 @@ from PyQt5.QtWidgets import QApplication, QMainWindow
 import os
 from random import randrange
 
-pygame.init()
 SIZE = 1000
 FPS = 50
 CELL_SIZE = 30
+
 
 
 def fon_paint():
@@ -36,13 +36,23 @@ class Tile(pygame.sprite.Sprite):
         super().__init__(sprites)
         self.x = x
         self.y = y
+        self.is_clicked = False
+
+    def click(self):
+        self.is_clicked = True
+        object_screen(self)
+
+    def unclick(self):
+        self.is_clicked = False
+        object_screen(self)
 
 
-class Pole(Tile):
+class Field(Tile):
     def __init__(self, x, y, sprites, cell_size):
         super().__init__(x, y, sprites)
-        self.image = pygame.transform.scale(load_image('pole.png'), (cell_size, cell_size))
+        self.image = pygame.transform.scale(load_image('Field.png'), (cell_size, cell_size))
         self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
+        self.name = 'field'
 
 
 class Castle(Tile):
@@ -95,7 +105,6 @@ class Resource(Tile):
 
 class MyWidget(QMainWindow):
     def __init__(self):
-        global SIZE
         super().__init__()
         uic.loadUi('untitled.ui', self)  # Загружаем дизайн
         self.is_pushed = False
@@ -173,60 +182,33 @@ def resources_screen(resources):
         screen.blit(string_rendered, intro_rect)
 
 
-def human_screen(human):
-    if human.is_clicked:
-        global human_sprites
-        font = pygame.font.Font(None, 30)
-        if human.name == 'Строитель':
-            hammer = pygame.transform.scale(load_image('hammer.png'), (50, 50))
-            image = pygame.transform.scale(load_image('frame.png'), (300, 100))
-            frame = pygame.sprite.Sprite(human_sprites)
-            build = pygame.sprite.Sprite(human_sprites)
-            build.image = hammer
-            build.rect = build.image.get_rect()
-            build.rect.x = SIZE // 2 - 100
-            build.rect.y = SIZE + 25
-            frame.image = image
-            frame.rect = frame.image.get_rect()
-            frame.rect.x = SIZE // 2 - 150
-            frame.rect.y = SIZE
-            clock = pygame.time.Clock()
-            while frame.rect.y > SIZE - 100:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        terminate()
-                frame.rect.y -= 600 / FPS
-                build.rect.y -= 600 / FPS
-                if frame.rect.y < SIZE - 100:
-                    # intro_rect.y = SIZE - 100
-                    frame.rect.y = SIZE - 100
-                    build.rect.y = SIZE - 75
-                human_sprites.draw(screen)
-                pygame.display.flip()
-                clock.tick(FPS)
-        else:
-            name = 'Развечик'
-            string_rendered = font.render(name, 1, pygame.Color('white'))
-            image = pygame.transform.scale(load_image('frame.png'), (300, 100))
-            frame = pygame.sprite.Sprite(human_sprites)
-            frame.image = image
-            frame.rect = frame.image.get_rect()
-            frame.rect.x = SIZE // 2 - 150
-            frame.rect.y = SIZE
-            clock = pygame.time.Clock()
-            while frame.rect.y > SIZE - 100:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        terminate()
-                frame.rect.y -= 600 / FPS
-                if frame.rect.y < SIZE - 100:
-                    frame.rect.y = SIZE - 100
-                human_sprites.draw(screen)
-                screen.blit(string_rendered, intro_rect)
-                pygame.display.flip()
-                clock.tick(FPS)
-    else:
-        human_sprites = pygame.sprite.Group()
+def name_to_text(name):
+    font = pygame.font.Font(None, 30)
+    string_rendered = font.render(name, 1, pygame.Color('white'))
+    intro_rect = string_rendered.get_rect()
+    text_coord = SIZE // 2 - 50
+    intro_rect.left = text_coord
+    intro_rect.y = SIZE - 100
+    screen.blit(string_rendered, intro_rect)
+
+
+def object_screen(obj):
+    if obj.is_clicked:
+        global frame, object_sprites
+        image = load_image('frame.png')
+        frame = pygame.sprite.Sprite(object_sprites)  # рамка размером 300 x 100
+        frame.image = image
+        frame.rect = frame.image.get_rect()
+        frame.rect.x = SIZE // 2 - 150
+        frame.rect.y = SIZE
+        name = obj.name
+        print(name, 'sasasasa')
+        while frame.rect.y > SIZE - 100:
+            frame.rect.y -= 600 / FPS
+            object_sprites.draw(screen)
+            pygame.display.flip()
+            clock.tick(FPS)
+        # name_to_text(name)
 
 
 class Board():
@@ -234,10 +216,8 @@ class Board():
         self.side_size = int(SIZE // 30)
         self.cell_size = 30
         self.width = self.height = BOARD_SIZE
-        self.list = [[0 for _ in range(self.width)] for _ in range(self.height)]
-        for i in range(self.width):
-            for j in range(self.height):
-                self.list[i][j] = Pole(i, j, all_sprites, self.cell_size)
+        self.list = [[Field(i, j, all_sprites, self.cell_size) for i in range(self.width)] for j in range(self.height)]
+        #  случайная генерация железа, дерева и еды
         for x_iron in range(0, self.width, 4):
             for y_iron in range(0, self.width, 3):
                 for x in range(randrange(2, 4)):
@@ -277,10 +257,21 @@ class Board():
         self.units.append(Scout(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
                                 randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
 
+    def is_someone_clicked(self):
+        for i in self.units:
+            if i.is_clicked:
+                return True
+        for i in range(len(self.list)):
+            for e in range(len(self.list)):
+                tile = self.list[i][e]
+                if tile.is_clicked:
+                    return True
+        return False
+
     def get_cell(self, mouse_pos):
         for i in range(self.height):
             for j in range(self.width):
-                if self.top + j * self.cell_size <= mouse_pos[0] <= self.cell_size + self.top + j * self.cell_size and\
+                if self.top + j * self.cell_size <= mouse_pos[0] <= self.cell_size + self.top + j * self.cell_size and \
                         self.top + i * self.cell_size <= mouse_pos[1] <= self.cell_size + self.top + i * self.cell_size:
                     return (i, j)
 
@@ -288,16 +279,32 @@ class Board():
         if event.button == 1:
             for i in self.units:
                 if i.get_coords() == cell_coords:
-                    i.click()
+                    if i.is_clicked:
+                        self.list[cell_coords[0]][cell_coords[1]].click()
+                        i.unclick()
+                        break
+                    else:
+                        i.click()
+                        break
                 else:
                     i.unclick()
+            else:
+                for i in range(len(self.list)):
+                    for e in range(len(self.list)):
+                        if (i, e) == cell_coords:
+                            tile = self.list[i][e]
+                            if tile.is_clicked:
+                                tile.unclick()
+                            else:
+                                tile.click()
+                        else:
+                            tile = self.list[i][e]
+                            tile.unclick()
         if event.button == 3:
             for i in self.units:
-                print(i)
                 if i.is_clicked and i.can_move(cell_coords):
                     i.move(cell_coords[0], cell_coords[1])
                     break
-        print(cell_coords)
 
     def get_click(self, mouse_pos, event):
         cell = self.get_cell(mouse_pos)
@@ -309,8 +316,7 @@ class Board():
         for i in range(self.height):
             for j in range(self.width):
                 pygame.draw.rect(screen, (255, 255, 255), (
-                self.top + j * self.cell_size, self.top + i * self.cell_size, self.cell_size, self.cell_size), 1)
-
+                    self.top + j * self.cell_size, self.top + i * self.cell_size, self.cell_size, self.cell_size), 1)
 
 
 class Human(pygame.sprite.Sprite):
@@ -321,13 +327,10 @@ class Human(pygame.sprite.Sprite):
         self.board = board
         self.cell_size = 30
         self.is_clicked = False
-        self.board.list[pos_x][pos_y] = 'human'
 
     def move(self, x, y):
         self.x = x
         self.y = y
-        self.board.list[self.x][self.y] = 'human'
-        self.board.list[x][y] = 'human'
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
 
     def can_move(self, coords):
@@ -366,11 +369,11 @@ class Human(pygame.sprite.Sprite):
 
     def click(self):
         self.is_clicked = True
-        human_screen(self)
+        object_screen(self)
 
     def unclick(self):
-        self.is_clicked = True
-        human_screen(self)
+        self.is_clicked = False
+        object_screen(self)
 
     def get_coords(self):
         return self.x, self.y
@@ -382,7 +385,7 @@ class Builder(Human):
         self.image = load_image('player_stand.png')
         self.image = pygame.transform.scale(self.image, (30, 30))
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
-        self.name = 'Строитель'
+        self.name = 'builder'
 
     def can_move(self, coords):
         x = coords[0]
@@ -425,7 +428,7 @@ class Scout(Human):
         self.image = load_image('scout.png')
         self.image = pygame.transform.scale(self.image, (30, 30))
         self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
-        self.name = 'Разведчик'
+        self.name = 'scout'
 
     def can_move(self, coords):
         x = coords[0]
@@ -436,20 +439,16 @@ class Scout(Human):
             return False
 
 
-
-
-
 if __name__ == '__main__':
-    pygame.init()
     SIZE, BOARD_SIZE, TOPLEFT = start_screen()
+    pygame.init()
     screen = pygame.display.set_mode((SIZE, SIZE))
     all_sprites = pygame.sprite.Group()
     tiles_group = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
-    human_sprites = pygame.sprite.Group()
+    object_sprites = pygame.sprite.Group()
     resources_sprites = pygame.sprite.Group()
     board = Board()
-    camera = Camera(board)
     clock = pygame.time.Clock()
     running = True
     screen.fill((0, 0, 0))
@@ -460,18 +459,13 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                print(event.button)
-                if event.button == 5:
-                    camera.zoom('-')
-                if event.button == 4:
-                    camera.zoom('+')
                 board.get_click(event.pos, event)
         fon_paint()
         all_sprites.draw(screen)
         board.render()
-        '''human_sprites.draw(screen)
         resources_screen(player.resources)
         resources_sprites.draw(screen)
-        player_group.draw(screen)'''
+        player_group.draw(screen)
+        object_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
