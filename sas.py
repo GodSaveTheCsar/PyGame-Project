@@ -114,7 +114,7 @@ class MyWidget(QMainWindow):
 
     def run(self):
         size = int(self.sender().text().split('(')[1][0:2])
-        self.size = size * 30 + 180
+        self.size = size * 30 + 320
         self.board_size = int(self.sender().text().split('(')[1][0:2])
         self.topleft = int((self.size - size * CELL_SIZE) / 2)
         self.is_pushed = True
@@ -186,29 +186,82 @@ def name_to_text(name):
     font = pygame.font.Font(None, 30)
     string_rendered = font.render(name, 1, pygame.Color('white'))
     intro_rect = string_rendered.get_rect()
-    text_coord = SIZE // 2 - 50
+    text_coord = SIZE // 2 - 25
     intro_rect.left = text_coord
     intro_rect.y = SIZE - 100
     screen.blit(string_rendered, intro_rect)
+    
+class Frame(pygame.sprite.Sprite):
+    def __init__(self, sprites):
+        super().__init__(sprites)
+        self.image = load_image('frame.png')
+        self.rect = self.image.get_rect()
+        self.rect.x = SIZE // 2 - 150
+        self.rect.y = SIZE
+
+    def call(self, obj):
+        if obj.__class__.__name__ == 'Resource':
+            pickaxe = pygame.sprite.Sprite(object_sprites)
+            pickaxe.image = pygame.transform.scale(load_image('pickaxe.png'), (40, 80))
+            pickaxe.rect = pickaxe.image.get_rect()
+            pickaxe.rect.x = self.rect.x + 50
+            pickaxe.rect.y = self.rect.y + 25
+            object = pygame.sprite.Sprite(object_sprites)
+            object.image = pygame.transform.scale(obj.image, (100, 100))
+            object.rect = object.image.get_rect()
+            object.rect.x = self.rect.x + 200
+            object.rect.y = self.rect.y
+            while self.rect.y > SIZE - 100:
+                self.rect.y -= 600 / FPS
+                if self.rect.y < SIZE - 100:
+                    self.rect.y = SIZE - 100
+                pickaxe.rect.y = self.rect.y + 25
+                object.rect.y = self.rect.y
+                object_sprites.draw(screen)
+                pygame.display.flip()
+                clock.tick(FPS)
+        elif obj.name == 'builder':
+            pickaxe = pygame.sprite.Sprite(object_sprites)
+            pickaxe.image = pygame.transform.scale(load_image('hammer.png'), (80, 80))
+            pickaxe.rect = pickaxe.image.get_rect()
+            pickaxe.rect.x = self.rect.x + 50
+            pickaxe.rect.y = self.rect.y + 25
+            object = pygame.sprite.Sprite(object_sprites)
+            object.image = pygame.transform.scale(obj.image, (100, 100))
+            object.rect = object.image.get_rect()
+            object.rect.x = self.rect.x + 200
+            object.rect.y = self.rect.y
+            while self.rect.y > SIZE - 100:
+                self.rect.y -= 600 / FPS
+                if self.rect.y < SIZE - 100:
+                    self.rect.y = SIZE - 100
+                pickaxe.rect.y = self.rect.y + 25
+                object.rect.y = self.rect.y
+                object_sprites.draw(screen)
+                pygame.display.flip()
+                clock.tick(FPS)
+        else:
+            object = pygame.sprite.Sprite(object_sprites)
+            object.image = pygame.transform.scale(obj.image, (100, 100))
+            object.rect = object.image.get_rect()
+            object.rect.x = self.rect.x + 200
+            object.rect.y = self.rect.y
+            while self.rect.y > SIZE - 100:
+                self.rect.y -= 600 / FPS
+                if self.rect.y < SIZE - 100:
+                    self.rect.y = SIZE - 100
+                object.rect.y = self.rect.y
+                object_sprites.draw(screen)
+                pygame.display.flip()
+                clock.tick(FPS)
 
 
 def object_screen(obj):
+    global object_sprites
+    frame = Frame(object_sprites)
     if obj.is_clicked:
-        global frame, object_sprites
-        image = load_image('frame.png')
-        frame = pygame.sprite.Sprite(object_sprites)  # рамка размером 300 x 100
-        frame.image = image
-        frame.rect = frame.image.get_rect()
-        frame.rect.x = SIZE // 2 - 150
-        frame.rect.y = SIZE
-        name = obj.name
-        print(name, 'sasasasa')
-        while frame.rect.y > SIZE - 100:
-            frame.rect.y -= 600 / FPS
-            object_sprites.draw(screen)
-            pygame.display.flip()
-            clock.tick(FPS)
-        # name_to_text(name)
+        frame.call(obj)
+
 
 
 class Board():
@@ -257,23 +310,13 @@ class Board():
         self.units.append(Scout(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
                                 randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
 
-    def is_someone_clicked(self):
-        for i in self.units:
-            if i.is_clicked:
-                return True
-        for i in range(len(self.list)):
-            for e in range(len(self.list)):
-                tile = self.list[i][e]
-                if tile.is_clicked:
-                    return True
-        return False
 
     def get_cell(self, mouse_pos):
         for i in range(self.height):
             for j in range(self.width):
                 if self.top + j * self.cell_size <= mouse_pos[0] <= self.cell_size + self.top + j * self.cell_size and \
                         self.top + i * self.cell_size <= mouse_pos[1] <= self.cell_size + self.top + i * self.cell_size:
-                    return (i, j)
+                    return i, j
 
     def on_click(self, cell_coords, event):
         if event.button == 1:
@@ -315,8 +358,15 @@ class Board():
         self.left = (SIZE - self.width * self.cell_size) / 2
         for i in range(self.height):
             for j in range(self.width):
-                pygame.draw.rect(screen, (255, 255, 255), (
-                    self.top + j * self.cell_size, self.top + i * self.cell_size, self.cell_size, self.cell_size), 1)
+                for e in self.units:
+                    if e.is_clicked:
+                        name_to_text(e.name)
+                        break
+                else:
+                    if self.list[i][j].is_clicked:
+                        name_to_text(self.list[i][j].name)
+                pygame.draw.rect(screen, (255, 255, 255), (self.top + j * self.cell_size, self.top + i
+                                                           * self.cell_size, self.cell_size, self.cell_size), 1)
 
 
 class Human(pygame.sprite.Sprite):
@@ -462,10 +512,10 @@ if __name__ == '__main__':
                 board.get_click(event.pos, event)
         fon_paint()
         all_sprites.draw(screen)
+        object_sprites.draw(screen)
         board.render()
         resources_screen(player.resources)
         resources_sprites.draw(screen)
         player_group.draw(screen)
-        object_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
