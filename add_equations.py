@@ -4,7 +4,7 @@ import random
 con = sqlite3.connect("data/equations.db")
 cur = con.cursor()
 for i in range(100):
-    eq = str(random.randint(1, 5000)) + random.choice(['+', '-']) + str(random.randint(1, 4999))
+    eq = str(random.randint(1, 500)) + random.choice(['+', '-']) + str(random.randint(1, 499))
     otv = str(eval(eq))
     cur.execute("""INSERT INTO primeri(type, example, answer) VALUES(?, ?, ?)""", ('example', eq, otv))
 for i in range(100):

@@ -94,12 +94,32 @@ class Resource(Tile):
         if name == 'food':
             self.image = pygame.transform.scale(load_image('food.png'), (30, 30))
             self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
-        '''if name == 'wood':
-            self.image = load_image('wood.png')
-            self.image = pygame.transform.scale(self.image, (28, 28))'''
 
     def mine(self):
         player.resources[self.name] += get_primer(self.name)
+
+    def get_coords(self):
+        return (self.x, self.y)
+
+    def build(self):
+        if self.name == 'tree':
+            self.name = 'samwill'
+            self.image = pygame.transform.scale(load_image('samwill.png'), (30, 30))
+            self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
+        if self.name == 'iron':
+            self.name = 'shaft'
+            self.image = pygame.transform.scale(load_image('shaft.jpg'), (30, 30))
+            self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
+        if self.name == 'food':
+            self.name = 'farm'
+            self.image = pygame.transform.scale(load_image('farm.jpg'), (30, 30))
+            self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
+        if self.name == 'brilliant':
+            self.name = 'oracle'
+            self.image = pygame.transform.scale(load_image('tree.png'), (30, 30))
+            self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
+        
+
 
 
 def get_primer(name):
@@ -112,7 +132,6 @@ def get_primer(name):
     while True:
         for event in pygame.event.get():
             if ex1.is_pushed:
-                ex1.close()
                 if ex1.is_true:
                     return int(20 / (pygame.time.get_ticks() - start_ticks) * 100000)
                 else:
@@ -132,9 +151,10 @@ class MyWidget_primer(QMainWindow):
         if name == 'tree' or name == 'iron':
             self.result = choice(cur.execute("""SELECT * FROM primeri WHERE type = 'example'""").fetchall())
         if name == 'food':
-            self.result = cur.execute("""SELECT * FROM primeri WHERE type = 'lin_equation'""").fetchall()
+            self.result = choice(cur.execute("""SELECT * FROM primeri WHERE type = 'lin_equation'""").fetchall())
         if name == 'brilliant':
-            self.result = cur.execute("""SELECT * FROM primeri WHERE type = 'quad_equation'""").fetchall()
+            self.result = choice(cur.execute("""SELECT * FROM primeri WHERE type = 'quad_equation'""").fetchall())
+        print(self.result)
         self.pushButton.clicked.connect(self.run)
         self.label.setText(str(self.result[1]))
         self.otvet = str(self.result[-1])
@@ -145,6 +165,7 @@ class MyWidget_primer(QMainWindow):
             self.is_true = True
         else:
             self.is_true = False
+        self.close()
 
 
 
@@ -404,10 +425,15 @@ class Board():
                         for j in i:
                             if j.is_clicked and j.__class__.__name__ == 'Resource':
                                 j.mine()
-            for i in self.units:
-                if i.is_clicked and i.can_move(cell_coords):
-                    i.move(cell_coords[0], cell_coords[1])
-                    break
+                if board.frames[-1].obj.__class__.__name__ == 'Builder':
+                    for i in self.units:
+                        if i.is_clicked and i.__class__.__name__ == 'Builder':
+                            i.build()
+            else:
+                for i in self.units:
+                    if i.is_clicked and i.can_move(cell_coords):
+                        i.move(cell_coords[0], cell_coords[1])
+                        break
 
     def get_click(self, mouse_pos, event):
         cell = self.get_cell(mouse_pos)
@@ -530,6 +556,12 @@ class Builder(Human):
                 return False
             if x + 1 == self.x or x - 1 == self.x:
                 return (x, y) not in [i.get_coords() for i in self.board.units]
+
+    def build(self):
+        for i in self.board.list:
+            for j in i:
+                if j.__class__.__name__ == 'Resource' and (self.x, self.y) == j.get_coords():
+                    j.build()
 
 
 class Scout(Human):
