@@ -11,7 +11,6 @@ FPS = 50
 CELL_SIZE = 30
 
 
-
 def fon_paint():
     fon = pygame.transform.scale(load_image('fon.jpg'), (SIZE, SIZE))
     screen = pygame.display.set_mode((SIZE, SIZE))
@@ -109,12 +108,12 @@ class Resource(Tile):
             board.passive_update('tree', 2)
         if self.name == 'iron':
             self.name = 'shaft'
-            self.image = pygame.transform.scale(load_image('shaft.jpg'), (30, 30))
+            self.image = pygame.transform.scale(load_image('shaft.png'), (30, 30))
             self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
             board.passive_update('iron', 2)
         if self.name == 'food':
             self.name = 'farm'
-            self.image = pygame.transform.scale(load_image('farm.jpg'), (30, 30))
+            self.image = pygame.transform.scale(load_image('farm.png'), (30, 30))
             self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
             board.passive_update('food', 2)
         if self.name == 'brilliant':
@@ -335,7 +334,7 @@ def object_screen(obj):
 
 
 def mine_or_build_click(x, y):
-    if x > SIZE // 3 and x < SIZE // 3 + 100:
+    if SIZE // 3 < x < SIZE // 3 + 100:
         if y > SIZE - 150:
             return True
 
@@ -346,7 +345,7 @@ class Button(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(all_sprites)
         self.turn = 1
-        self.image = self.image = pygame.transform.scale(load_image('knopka.jpg'), (100, 100))
+        self.image = self.image = pygame.transform.scale(load_image('button.png'), (100, 100))
         self.rect = self.image.get_rect().move(SIZE - 100, 50)
 
     def next_turn_click(self, x, y):
@@ -357,7 +356,6 @@ class Button(pygame.sprite.Sprite):
             return True
         else:
             return False
-
 
 
 class Board():
@@ -424,7 +422,6 @@ class Board():
         player.update_resources('brilliant', self.passive['brilliant'])
         self.scout_can_go = True
         self.builder_can_go = True
-
 
     def get_cell(self, mouse_pos):
         for i in range(self.height):
