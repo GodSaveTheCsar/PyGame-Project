@@ -11,7 +11,6 @@ FPS = 50
 CELL_SIZE = 30
 
 
-
 def fon_paint():
     fon = pygame.transform.scale(load_image('fon.jpg'), (SIZE, SIZE))
     screen = pygame.display.set_mode((SIZE, SIZE))
