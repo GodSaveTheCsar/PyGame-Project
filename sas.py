@@ -67,10 +67,10 @@ class Castle(Tile):
 class Player:
     def __init__(self):
         self.resources = {
-            'wood': 0,
             'iron': 0,
-            'jewelry': 0,
-            'food': 0
+            'food': 0,
+            'tree': 0,
+            'jewelry': 0
         }
 
     def update_resources(self, name, val):
@@ -98,9 +98,25 @@ class Resource(Tile):
             self.image = pygame.transform.scale(self.image, (28, 28))
 
     def mine(self):
-        if not self.is_mining:
-            self.is_mining = True
-            print('добывается')
+        print('добывается')
+        player.resources[self.name] += get_primer(self.name)
+
+
+def get_primer(name):
+    ex = MyWidget()
+    ex.show()
+
+
+class MyWidget_primer(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        uic.loadUi('primer.ui', self)  # Загружаем дизайн
+        self.pushButton.clicked.connect(self.run)
+
+    def run(self):
+        con = sqlite3.connect("data/equations.db")
+        cur = con.cursor()
+
 
 
 class MyWidget(QMainWindow):
@@ -192,14 +208,16 @@ def name_to_text(name):
     screen.blit(string_rendered, intro_rect)
     
 class Frame(pygame.sprite.Sprite):
-    def __init__(self, sprites):
+    def __init__(self, sprites, obj):
         super().__init__(sprites)
         self.image = load_image('frame.png')
         self.rect = self.image.get_rect()
         self.rect.x = SIZE // 2 - 150
         self.rect.y = SIZE
+        self.obj = obj
 
     def call(self, obj):
+        obj = self.obj
         if obj.__class__.__name__ == 'Resource':
             pickaxe = pygame.sprite.Sprite(object_sprites)
             pickaxe.image = pygame.transform.scale(load_image('pickaxe.png'), (40, 80))
@@ -258,9 +276,15 @@ class Frame(pygame.sprite.Sprite):
 
 def object_screen(obj):
     global object_sprites
-    frame = Frame(object_sprites)
+    board.frames.append(Frame(object_sprites, obj))
     if obj.is_clicked:
-        frame.call(obj)
+        board.frames[-1].call(1)
+
+
+def mine_or_build_click(x, y):
+    if x > SIZE // 3 and x < SIZE // 3 + 100:
+        if y > SIZE - 150:
+            return True
 
 
 
@@ -270,6 +294,7 @@ class Board():
         self.cell_size = 30
         self.width = self.height = BOARD_SIZE
         self.list = [[Field(i, j, all_sprites, self.cell_size) for i in range(self.width)] for j in range(self.height)]
+        self.frames = []
         #  случайная генерация железа, дерева и еды
         for x_iron in range(0, self.width, 4):
             for y_iron in range(0, self.width, 3):
@@ -344,6 +369,12 @@ class Board():
                             tile = self.list[i][e]
                             tile.unclick()
         if event.button == 3:
+            if mine_or_build_click(event.pos[0], event.pos[1]):
+                if board.frames[-1].obj.__class__.__name__ == 'Resource':
+                    for i in self.list:
+                        for j in i:
+                            if j.is_clicked and j.__class__.__name__ == 'Resource':
+                                j.mine()
             for i in self.units:
                 if i.is_clicked and i.can_move(cell_coords):
                     i.move(cell_coords[0], cell_coords[1])
