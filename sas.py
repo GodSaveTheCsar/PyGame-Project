@@ -3,7 +3,8 @@ import sys
 from PyQt5 import uic  # Импортируем uic
 from PyQt5.QtWidgets import QApplication, QMainWindow
 import os
-from random import randrange
+from random import randrange, choice
+import sqlite3
 
 SIZE = 1000
 FPS = 50
@@ -70,7 +71,7 @@ class Player:
             'iron': 0,
             'food': 0,
             'tree': 0,
-            'jewelry': 0
+            'brilliant': 0
         }
 
     def update_resources(self, name, val):
@@ -93,29 +94,57 @@ class Resource(Tile):
         if name == 'food':
             self.image = pygame.transform.scale(load_image('food.png'), (30, 30))
             self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
-        if name == 'wood':
+        '''if name == 'wood':
             self.image = load_image('wood.png')
-            self.image = pygame.transform.scale(self.image, (28, 28))
+            self.image = pygame.transform.scale(self.image, (28, 28))'''
 
     def mine(self):
-        print('добывается')
         player.resources[self.name] += get_primer(self.name)
 
 
 def get_primer(name):
-    ex = MyWidget()
-    ex.show()
+    pygame.init()
+    clock = pygame.time.Clock()
+    app = QApplication(sys.argv)
+    start_ticks = pygame.time.get_ticks()
+    ex1 = MyWidget_primer(name)
+    ex1.show()
+    while True:
+        for event in pygame.event.get():
+            if ex1.is_pushed:
+                ex1.close()
+                if ex1.is_true:
+                    return int(20 / (pygame.time.get_ticks() - start_ticks) * 100000)
+                else:
+                    return 10
+            if event.type == pygame.QUIT:
+                terminate()
+        clock.tick(FPS)
 
 
 class MyWidget_primer(QMainWindow):
-    def __init__(self):
+    def __init__(self, name):
         super().__init__()
         uic.loadUi('primer.ui', self)  # Загружаем дизайн
-        self.pushButton.clicked.connect(self.run)
-
-    def run(self):
+        self.is_pushed = False
         con = sqlite3.connect("data/equations.db")
         cur = con.cursor()
+        if name == 'tree' or name == 'iron':
+            self.result = choice(cur.execute("""SELECT * FROM primeri WHERE type = 'example'""").fetchall())
+        if name == 'food':
+            self.result = cur.execute("""SELECT * FROM primeri WHERE type = 'lin_equation'""").fetchall()
+        if name == 'brilliant':
+            self.result = cur.execute("""SELECT * FROM primeri WHERE type = 'quad_equation'""").fetchall()
+        self.pushButton.clicked.connect(self.run)
+        self.label.setText(str(self.result[1]))
+        self.otvet = str(self.result[-1])
+
+    def run(self):
+        self.is_pushed = True
+        if self.lineEdit.text().strip() == self.otvet:
+            self.is_true = True
+        else:
+            self.is_true = False
 
 
 
