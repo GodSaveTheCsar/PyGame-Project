@@ -45,7 +45,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Большой(25х25)</string>
+    <string>Большой(20х20)</string>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_3">
@@ -58,7 +58,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Маленький(15х15)</string>
+    <string>Маленький(10х10)</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_2">
@@ -121,7 +121,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Средний(20х20)</string>
+    <string>Средний(15х15)</string>
    </property>
   </widget>
   <widget class="QLabel" name="label">

@@ -11,6 +11,7 @@ FPS = 50
 CELL_SIZE = 30
 
 
+
 def fon_paint():
     fon = pygame.transform.scale(load_image('fon.jpg'), (SIZE, SIZE))
     screen = pygame.display.set_mode((SIZE, SIZE))
@@ -53,6 +54,23 @@ class Field(Tile):
         self.image = pygame.transform.scale(load_image('Field.png'), (cell_size, cell_size))
         self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
         self.name = 'field'
+        self.x = x
+        self.y = y
+
+    def build(self):
+        board.list[self.x][self.y] = Pyramid(self.x, self.y, all_sprites, CELL_SIZE)
+
+    def get_coords(self):
+        return (self.x, self.y)
+
+
+class Pyramid(Tile):
+    def __init__(self, x, y, sprites, cell_size):
+        super().__init__(x, y, sprites)
+        self.image = pygame.transform.scale(load_image('pyramid.png'), (cell_size, cell_size))
+        self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
+        self.name = 'pyramid'
+        board.passive_update('brilliant', 2)
 
 
 class Castle(Tile):
@@ -72,9 +90,13 @@ class Player:
             'tree': 0,
             'brilliant': 0
         }
+        self.hp = 100
 
     def update_resources(self, name, val):
         self.resources[name] += val
+
+    def hp_update(self, val):
+        self.hp += val
 
 
 class Resource(Tile):
@@ -108,12 +130,12 @@ class Resource(Tile):
             board.passive_update('tree', 2)
         if self.name == 'iron':
             self.name = 'shaft'
-            self.image = pygame.transform.scale(load_image('shaft.png'), (30, 30))
+            self.image = pygame.transform.scale(load_image('shaft.jpg'), (30, 30))
             self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
             board.passive_update('iron', 2)
         if self.name == 'food':
             self.name = 'farm'
-            self.image = pygame.transform.scale(load_image('farm.png'), (30, 30))
+            self.image = pygame.transform.scale(load_image('farm.jpg'), (30, 30))
             self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
             board.passive_update('food', 2)
         if self.name == 'brilliant':
@@ -328,13 +350,14 @@ class Frame(pygame.sprite.Sprite):
 
 def object_screen(obj):
     global object_sprites
+    board.frames = []
     board.frames.append(Frame(object_sprites, obj))
     if obj.is_clicked:
         board.frames[-1].call(1)
 
 
 def mine_or_build_click(x, y):
-    if SIZE // 3 < x < SIZE // 3 + 100:
+    if x > SIZE // 3 and x < SIZE // 3 + 100:
         if y > SIZE - 150:
             return True
 
@@ -345,7 +368,7 @@ class Button(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(all_sprites)
         self.turn = 1
-        self.image = self.image = pygame.transform.scale(load_image('button.png'), (100, 100))
+        self.image = self.image = pygame.transform.scale(load_image('knopka.jpg'), (100, 100))
         self.rect = self.image.get_rect().move(SIZE - 100, 50)
 
     def next_turn_click(self, x, y):
@@ -356,6 +379,10 @@ class Button(pygame.sprite.Sprite):
             return True
         else:
             return False
+
+
+def lose():
+    running = False
 
 
 class Board():
@@ -422,6 +449,12 @@ class Board():
         player.update_resources('brilliant', self.passive['brilliant'])
         self.scout_can_go = True
         self.builder_can_go = True
+        if self.turn % 10 == 0:
+            player.hp_update(-10 * ((turn % 10) * 0.7)**2)
+        if player.hp <= 0:
+            lose()
+
+
 
     def get_cell(self, mouse_pos):
         for i in range(self.height):
@@ -458,10 +491,13 @@ class Board():
                             tile.unclick()
         if event.button == 3:
             if mine_or_build_click(event.pos[0], event.pos[1]):
+                print([i.obj for i in board.frames])
                 if board.frames[-1].obj.__class__.__name__ == 'Resource':
                     for i in self.list:
                         for j in i:
+                            print(1)
                             if j.is_clicked and j.__class__.__name__ == 'Resource':
+                                print(2)
                                 j.mine()
                 if board.frames[-1].obj.__class__.__name__ == 'Builder':
                     for i in self.units:
@@ -608,6 +644,8 @@ class Builder(Human):
             for j in i:
                 if j.__class__.__name__ == 'Resource' and (self.x, self.y) == j.get_coords():
                     j.build()
+                if j.__class__.__name__ == 'Field' and (self.x, self.y) == j.get_coords():
+                    j.build()
 
 
 class Scout(Human):
@@ -625,6 +663,10 @@ class Scout(Human):
             return True
         else:
             return False
+
+
+def lose_window():
+    pass
 
 
 if __name__ == '__main__':
@@ -658,3 +700,4 @@ if __name__ == '__main__':
         player_group.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
+lose_window()
