@@ -433,10 +433,10 @@ class Board():
         self.top = (SIZE - self.width * self.cell_size) / 2
         self.left = (SIZE - self.width * self.cell_size) / 2
         self.units = []
-        self.units.append(Builder(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
-                                  randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
-        self.units.append(Scout(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
-                                randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
+        self.units.append(Builder(randrange(SIZE // 30 // 2 - 3, SIZE // 30 // 2),
+                                  randrange(SIZE // 30 // 2 - 3, SIZE // 30 // 2), self))
+        self.units.append(Scout(randrange(SIZE // 30 // 2 - 3, SIZE // 30 // 2),
+                                randrange(SIZE // 30 // 2 - 3, SIZE // 30 // 2), self))
         self.scout_can_go = True
         self.builder_can_go = True
 
@@ -463,6 +463,8 @@ class Board():
                     return i, j
 
     def on_click(self, cell_coords, event):
+        print(self.units)
+        print(self.list)
         if event.button == 1:
             button.next_turn_click(event.pos[0], event.pos[1])
             for i in self.units:
