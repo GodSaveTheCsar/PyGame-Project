@@ -75,7 +75,7 @@ class Player:
         }
 
     def update_resources(self, name, val):
-        self.resourses[name] += val
+        self.resources[name] += val
 
 
 class Resource(Tile):
@@ -106,19 +106,23 @@ class Resource(Tile):
             self.name = 'samwill'
             self.image = pygame.transform.scale(load_image('samwill.png'), (30, 30))
             self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
+            board.passive_update('tree', 2)
         if self.name == 'iron':
             self.name = 'shaft'
             self.image = pygame.transform.scale(load_image('shaft.jpg'), (30, 30))
             self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
+            board.passive_update('iron', 2)
         if self.name == 'food':
             self.name = 'farm'
             self.image = pygame.transform.scale(load_image('farm.jpg'), (30, 30))
             self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
+            board.passive_update('food', 2)
         if self.name == 'brilliant':
             self.name = 'oracle'
             self.image = pygame.transform.scale(load_image('tree.png'), (30, 30))
             self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
-        
+            board.passive_update('ora', 2)
+
 
 
 
@@ -154,7 +158,6 @@ class MyWidget_primer(QMainWindow):
             self.result = choice(cur.execute("""SELECT * FROM primeri WHERE type = 'lin_equation'""").fetchall())
         if name == 'brilliant':
             self.result = choice(cur.execute("""SELECT * FROM primeri WHERE type = 'quad_equation'""").fetchall())
-        print(self.result)
         self.pushButton.clicked.connect(self.run)
         self.label.setText(str(self.result[1]))
         self.otvet = str(self.result[-1])
@@ -338,6 +341,25 @@ def mine_or_build_click(x, y):
 
 
 
+
+class Button(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(all_sprites)
+        self.turn = 1
+        self.image = self.image = pygame.transform.scale(load_image('knopka.jpg'), (100, 100))
+        self.rect = self.image.get_rect().move(SIZE - 100, 50)
+
+    def next_turn_click(self, x, y):
+        if x > SIZE - 100 and y > 50 and y < 150:
+            self.turn += 1
+            board.next_turn()
+            print(self.turn)
+            return True
+        else:
+            return False
+
+
+
 class Board():
     def __init__(self):
         self.side_size = int(SIZE // 30)
@@ -345,6 +367,13 @@ class Board():
         self.width = self.height = BOARD_SIZE
         self.list = [[Field(i, j, all_sprites, self.cell_size) for i in range(self.width)] for j in range(self.height)]
         self.frames = []
+        self.passive = {
+            'iron': 0,
+            'food': 0,
+            'tree': 0,
+            'brilliant': 0
+        }
+        self.turn = 1
         #  случайная генерация железа, дерева и еды
         for x_iron in range(0, self.width, 4):
             for y_iron in range(0, self.width, 3):
@@ -384,6 +413,17 @@ class Board():
                                   randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
         self.units.append(Scout(randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2),
                                 randrange(SIZE // 30 // 2 - 2, SIZE // 30 // 2 + 2), self))
+        self.scout_can_go = True
+        self.builder_can_go = True
+
+    def next_turn(self):
+        self.turn += 1
+        player.update_resources('tree', self.passive['tree'])
+        player.update_resources('iron', self.passive['iron'])
+        player.update_resources('food', self.passive['food'])
+        player.update_resources('brilliant', self.passive['brilliant'])
+        self.scout_can_go = True
+        self.builder_can_go = True
 
 
     def get_cell(self, mouse_pos):
@@ -395,6 +435,7 @@ class Board():
 
     def on_click(self, cell_coords, event):
         if event.button == 1:
+            button.next_turn_click(event.pos[0], event.pos[1])
             for i in self.units:
                 if i.get_coords() == cell_coords:
                     if i.is_clicked:
@@ -431,9 +472,17 @@ class Board():
                             i.build()
             else:
                 for i in self.units:
-                    if i.is_clicked and i.can_move(cell_coords):
-                        i.move(cell_coords[0], cell_coords[1])
-                        break
+                    if (i.__class__.__name__ == 'Builder' and self.builder_can_go) or (i.__class__.__name__ == 'Scout' and self.scout_can_go):
+                        if i.is_clicked and i.can_move(cell_coords):
+                            i.move(cell_coords[0], cell_coords[1])
+                            if i.__class__.__name__ == 'Builder':
+                                self.builder_can_go = False
+                            else:
+                                self.scout_can_go = False
+                            break
+
+    def passive_update(self, name, val):
+        self.passive[name] += val
 
     def get_click(self, mouse_pos, event):
         cell = self.get_cell(mouse_pos)
@@ -591,6 +640,7 @@ if __name__ == '__main__':
     object_sprites = pygame.sprite.Group()
     resources_sprites = pygame.sprite.Group()
     board = Board()
+    button = Button()
     clock = pygame.time.Clock()
     running = True
     screen.fill((0, 0, 0))
