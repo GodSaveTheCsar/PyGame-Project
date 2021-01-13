@@ -48,6 +48,9 @@ class Tile(pygame.sprite.Sprite):
         self.is_clicked = False
         object_screen(self)
 
+    #def build(self, name):
+
+
 
 class Field(Tile):
     def __init__(self, x, y, sprites, cell_size):
