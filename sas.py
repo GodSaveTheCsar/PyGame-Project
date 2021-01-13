@@ -7,7 +7,7 @@ from random import randrange, choice
 import sqlite3
 
 SIZE = 1000
-FPS = 50
+FPS = 300
 CELL_SIZE = 30
 
 
@@ -271,14 +271,25 @@ def resources_screen(resources):
         screen.blit(string_rendered, intro_rect)
 
 
-def name_to_text(name):
+def name_to_text(name, counter=False):
     font = pygame.font.Font(None, 30)
     string_rendered = font.render(name, 1, pygame.Color('white'))
     intro_rect = string_rendered.get_rect()
-    text_coord = SIZE // 2 - 25
-    intro_rect.left = text_coord
-    intro_rect.y = SIZE - 100
+    if counter:
+        if name.startswith('hp'):
+            text_coord = 0
+            intro_rect.left = text_coord
+            intro_rect.y = 75
+        else:
+            text_coord = 100
+            intro_rect.left = text_coord
+            intro_rect.y = 75
+    else:
+        text_coord = SIZE // 2 - 25
+        intro_rect.left = text_coord
+        intro_rect.y = SIZE - 100
     screen.blit(string_rendered, intro_rect)
+
     
 class Frame(pygame.sprite.Sprite):
     def __init__(self, sprites, obj):
@@ -374,13 +385,13 @@ class Button(pygame.sprite.Sprite):
         if x > SIZE - 100 and y > 50 and y < 150:
             self.turn += 1
             board.next_turn()
-            print(self.turn)
             return True
         else:
             return False
 
 
 def lose():
+    global running
     running = False
 
 
@@ -398,7 +409,6 @@ class Board():
             'brilliant': 0
         }
         self.turn = 1
-        #  случайная генерация железа, дерева и еды
         for x_iron in range(0, self.width, 4):
             for y_iron in range(0, self.width, 3):
                 for x in range(randrange(2, 4)):
@@ -449,7 +459,7 @@ class Board():
         self.scout_can_go = True
         self.builder_can_go = True
         if self.turn % 10 == 0:
-            player.hp_update(-10 * ((turn % 10) * 0.7)**2)
+            player.hp_update(-(self.turn // 10)**2 - 10)
         if player.hp <= 0:
             lose()
 
@@ -463,8 +473,6 @@ class Board():
                     return i, j
 
     def on_click(self, cell_coords, event):
-        print(self.units)
-        print(self.list)
         if event.button == 1:
             button.next_turn_click(event.pos[0], event.pos[1])
             for i in self.units:
@@ -492,13 +500,10 @@ class Board():
                             tile.unclick()
         if event.button == 3:
             if mine_or_build_click(event.pos[0], event.pos[1]):
-                print([i.obj for i in board.frames])
                 if board.frames[-1].obj.__class__.__name__ == 'Resource':
                     for i in self.list:
                         for j in i:
-                            print(1)
                             if j.is_clicked and j.__class__.__name__ == 'Resource':
-                                print(2)
                                 j.mine()
                 if board.frames[-1].obj.__class__.__name__ == 'Builder':
                     for i in self.units:
@@ -598,6 +603,22 @@ class Human(pygame.sprite.Sprite):
         return self.x, self.y
 
 
+class Counter(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(all_sprites)
+        self.turn = 1
+        self.hp = 100
+        self.image = load_image('counter.jpg')
+        self.image = pygame.transform.scale(self.image, (200, 50))
+        self.rect = self.image.get_rect().move(0, 50)
+
+    def draw(self):
+        name_to_text('hp: ' + str(player.hp), counter=True)
+        name_to_text('turn: ' + str(board.turn), counter=True)
+
+
+
+
 class Builder(Human):
     def __init__(self, pos_x, pos_y, board):
         super().__init__(pos_x, pos_y, board)
@@ -666,8 +687,19 @@ class Scout(Human):
             return False
 
 
-def lose_window():
-    pass
+class Lose_Window(QMainWindow):
+    def __init__(self, turns):
+        super().__init__()
+        uic.loadUi('lose_window.ui', self)
+        self.label.setText(f'Вы прожили {turns} ходов')
+        self.setWindowTitle('You lose!')
+
+
+def lose_window(turns):
+    app = QApplication(sys.argv)
+    ex = Lose_Window(turns)
+    ex.show()
+    app.exec_()
 
 
 if __name__ == '__main__':
@@ -680,6 +712,7 @@ if __name__ == '__main__':
     object_sprites = pygame.sprite.Group()
     resources_sprites = pygame.sprite.Group()
     board = Board()
+    counter = Counter()
     button = Button()
     clock = pygame.time.Clock()
     running = True
@@ -699,6 +732,7 @@ if __name__ == '__main__':
         resources_screen(player.resources)
         resources_sprites.draw(screen)
         player_group.draw(screen)
+        counter.draw()
         pygame.display.flip()
         clock.tick(FPS)
-lose_window()
+lose_window(board.turn)
