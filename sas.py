@@ -89,10 +89,10 @@ class Castle(Tile):
 class Player:
     def __init__(self):
         self.resources = {
-            'iron': 0,
-            'food': 0,
-            'wood': 0,
-            'brilliant': 0
+            'iron': 1000,
+            'food': 1000,
+            'wood': 1000,
+            'brilliant': 100
         }
         self.hp = 100
         self.castle = False
@@ -180,6 +180,7 @@ class Build_menu(QWidget):
         self.resources = BUILDINGS[name].split(',')
         self.building_1.setText(name)
         self.price_1.setText(BUILDINGS[name])
+        self.can_build = False
         if player.castle:
             self.price_2.hide()
             self.building_2.hide()
@@ -196,9 +197,11 @@ class Build_menu(QWidget):
             if player.resources[name] >= price:
                 print(player.resources[name])
                 continue
-        else:
-            self.error.setText('Not enough resources')
-        # self.close()
+            else:
+                a = False
+                self.error.setText('Not enough resources')
+        self.can_build = True
+        self.close()
 
 
 class MyWidget_primer(QMainWindow):
@@ -267,7 +270,7 @@ def resources_screen(resources):
     image = load_image('frame_1.png')
     iron = pygame.transform.scale(load_image('iron_icon.png'), (50, 50))
     wood = pygame.transform.scale(load_image('wood_icon.png'), (50, 50))
-    brilliant = pygame.transform.scale(load_image('brilliant_icon.png'), (40, 50))
+    brilliant = pygame.transform.scale(load_image('brilliant_icon.jpg'), (40, 50))
     frame = pygame.sprite.Sprite(resources_sprites)
     wood_i = pygame.sprite.Sprite(resources_sprites)
     iron_i = pygame.sprite.Sprite(resources_sprites)
@@ -306,13 +309,23 @@ def resources_screen(resources):
         screen.blit(string_rendered, intro_rect)
 
 
-def name_to_text(name):
+def name_to_text(name, checker1=False):
     font = pygame.font.Font(None, 30)
     string_rendered = font.render(name, 1, pygame.Color('white'))
     intro_rect = string_rendered.get_rect()
-    text_coord = SIZE//2 - 25
-    intro_rect.left = text_coord
-    intro_rect.y = SIZE - 100
+    if checker1:
+        if name.startswith('hp'):
+            text_coord = 0
+            intro_rect.left = text_coord
+            intro_rect.y = 100
+        else:
+            text_coord = 100
+            intro_rect.left = text_coord
+            intro_rect.y = 100
+    else:
+        text_coord = SIZE//2 - 25
+        intro_rect.left = text_coord
+        intro_rect.y = SIZE - 100
     screen.blit(string_rendered, intro_rect)
 
 
@@ -481,10 +494,11 @@ class Board:
         player.update_resources('brilliant', self.passive['brilliant'])
         self.scout_can_go = True
         self.builder_can_go = True
-        if self.turn%10 == 0:
+        if self.turn % 10 == 0:
             player.hp_update(-10*((self.turn%10)*0.7) ** 2)
         if player.hp <= 0:
             lose()
+        checker.upd_text()
 
     def get_cell(self, mouse_pos):
         for i in range(self.height):
@@ -495,6 +509,7 @@ class Board:
 
     def on_click(self, cell_coords, event):
         if event.button == 1:
+            changer_check(event.pos)
             button.next_turn_click(event.pos[0], event.pos[1])
             for i in self.units:
                 if i.get_coords() == cell_coords:
@@ -563,6 +578,38 @@ class Board:
                         name_to_text(self.list[i][j].name)
                 pygame.draw.rect(screen, (255, 255, 255), (self.top + j*self.cell_size, self.top + i
                                                            * self.cell_size, self.cell_size, self.cell_size), 1)
+
+
+def changer_check(coords):
+    x = coords[0]
+    y = coords[1]
+    if x > SIZE // 3 and x < 2 * (SIZE // 3) and y > 50 and y < 150:
+        changer.change()
+
+
+class Changer(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(all_sprites)
+        self.txt = 'обмен 10 алмазов на 3 жизней'
+        self.image = pygame.transform.scale(load_image('checker.jpg'), (int(SIZE/3), 100))
+        self.rect = self.image.get_rect().move(SIZE // 3, 50)
+
+    def change(self):
+        if player.resources['brilliant'] >= 10:
+            hp_up = player.resources['brilliant'] // 10 * 3
+            player.resources['brilliant'] = player.resources['brilliant'] % 10
+            player.hp += hp_up
+
+
+class Turn_checker(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(all_sprites)
+        self.image = pygame.transform.scale(load_image('checker.jpg'), (100, 100))
+        self.rect = self.image.get_rect().move(0, 50)
+
+    def upd_text(self):
+        name_to_text('turn: ' + str(board.turn), checker1=True)
+        name_to_text('hp: ' + str(player.hp), checker1=True)
 
 
 class Human(pygame.sprite.Sprite):
@@ -680,6 +727,8 @@ class Builder(Human):
         build_menu = Build_menu(player, name)
         build_menu.show()
         app.exec_()
+        if build_menu.can_build:
+            self.build()
 
 
 class Scout(Human):
@@ -714,6 +763,8 @@ if __name__ == '__main__':
     resources_sprites = pygame.sprite.Group()
     board = Board()
     button = Button()
+    checker = Turn_checker()
+    changer = Changer()
     clock = pygame.time.Clock()
     running = True
     screen.fill((0, 0, 0))
@@ -732,6 +783,7 @@ if __name__ == '__main__':
         resources_screen(player.resources)
         resources_sprites.draw(screen)
         player_group.draw(screen)
+        checker.upd_text()
         pygame.display.flip()
         clock.tick(FPS)
 lose_window()
