@@ -1,14 +1,16 @@
 import pygame
 import sys
 from PyQt5 import uic  # Импортируем uic
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget
 import os
 from random import randrange, choice
 import sqlite3
 
 SIZE = 1000
-FPS = 50
+FPS = 120
 CELL_SIZE = 30
+BUILDINGS = {'Fort': '100 wood, 50 iron', 'Sawmill': '150 wood, 125 iron, 75 food', 'Pyramid': '300 wood, 300 iron',
+             'Shaft': '100 wood, 200 iron, 50 food', 'Farm': '75 wood, 75 iron, 200 food'}
 
 
 def fon_paint():
@@ -51,23 +53,23 @@ class Field(Tile):
     def __init__(self, x, y, sprites, cell_size):
         super().__init__(x, y, sprites)
         self.image = pygame.transform.scale(load_image('Field.png'), (cell_size, cell_size))
-        self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
+        self.rect = self.image.get_rect().move(y*CELL_SIZE + TOPLEFT, x*CELL_SIZE + TOPLEFT)
         self.name = 'field'
         self.x = x
         self.y = y
 
-    def build(self):
-        board.list[self.x][self.y] = Pyramid(self.x, self.y, all_sprites, CELL_SIZE)
+    def get_building_name(self):
+        return 'pyramid'
 
     def get_coords(self):
-        return (self.x, self.y)
+        return self.x, self.y
 
 
 class Pyramid(Tile):
     def __init__(self, x, y, sprites, cell_size):
         super().__init__(x, y, sprites)
         self.image = pygame.transform.scale(load_image('pyramid.png'), (cell_size, cell_size))
-        self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
+        self.rect = self.image.get_rect().move(y*CELL_SIZE + TOPLEFT, x*CELL_SIZE + TOPLEFT)
         self.name = 'pyramid'
         board.passive_update('brilliant', 2)
 
@@ -78,7 +80,7 @@ class Castle(Tile):
         self.x = x
         self.y = y
         self.image = pygame.transform.scale(load_image('castle.jpg'), (30, 30))
-        self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
+        self.rect = self.image.get_rect().move(y*CELL_SIZE + TOPLEFT, x*CELL_SIZE + TOPLEFT)
 
 
 class Player:
@@ -86,10 +88,11 @@ class Player:
         self.resources = {
             'iron': 0,
             'food': 0,
-            'tree': 0,
+            'wood': 0,
             'brilliant': 0
         }
         self.hp = 100
+        self.castle = False
 
     def update_resources(self, name, val):
         self.resources[name] += val
@@ -105,15 +108,15 @@ class Resource(Tile):
         self.y = y
         self.name = name
         self.is_mining = False
-        if name == 'tree':
+        if name == 'wood':
             self.image = pygame.transform.scale(load_image('tree.png'), (30, 30))
-            self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
+            self.rect = self.image.get_rect().move(y*CELL_SIZE + TOPLEFT, x*CELL_SIZE + TOPLEFT)
         if name == 'iron':
             self.image = pygame.transform.scale(load_image('iron.png'), (30, 30))
-            self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
+            self.rect = self.image.get_rect().move(y*CELL_SIZE + TOPLEFT, x*CELL_SIZE + TOPLEFT)
         if name == 'food':
             self.image = pygame.transform.scale(load_image('food.png'), (30, 30))
-            self.rect = self.image.get_rect().move(y * CELL_SIZE + TOPLEFT, x * CELL_SIZE + TOPLEFT)
+            self.rect = self.image.get_rect().move(y*CELL_SIZE + TOPLEFT, x*CELL_SIZE + TOPLEFT)
 
     def mine(self):
         player.resources[self.name] += get_primer(self.name)
@@ -121,28 +124,25 @@ class Resource(Tile):
     def get_coords(self):
         return (self.x, self.y)
 
-    def build(self):
-        if self.name == 'tree':
-            self.name = 'samwill'
-            self.image = pygame.transform.scale(load_image('samwill.png'), (30, 30))
-            self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
-            board.passive_update('tree', 2)
+    def get_building_name(self):
+        if self.name == 'wood':
+            self.name = 'sawmill'
         if self.name == 'iron':
             self.name = 'shaft'
-            self.image = pygame.transform.scale(load_image('shaft.jpg'), (30, 30))
-            self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
+            self.image = pygame.transform.scale(load_image('shaft.png'), (30, 30))
+            self.rect = self.image.get_rect().move(self.y*CELL_SIZE + TOPLEFT, self.x*CELL_SIZE + TOPLEFT)
             board.passive_update('iron', 2)
         if self.name == 'food':
             self.name = 'farm'
-            self.image = pygame.transform.scale(load_image('farm.jpg'), (30, 30))
-            self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
+            self.image = pygame.transform.scale(load_image('farm.png'), (30, 30))
+            self.rect = self.image.get_rect().move(self.y*CELL_SIZE + TOPLEFT, self.x*CELL_SIZE + TOPLEFT)
             board.passive_update('food', 2)
         if self.name == 'brilliant':
             self.name = 'oracle'
             self.image = pygame.transform.scale(load_image('tree.png'), (30, 30))
-            self.rect = self.image.get_rect().move(self.y * CELL_SIZE + TOPLEFT, self.x * CELL_SIZE + TOPLEFT)
+            self.rect = self.image.get_rect().move(self.y*CELL_SIZE + TOPLEFT, self.x*CELL_SIZE + TOPLEFT)
             board.passive_update('ora', 2)
-
+        return self.name
 
 
 
@@ -157,12 +157,45 @@ def get_primer(name):
         for event in pygame.event.get():
             if ex1.is_pushed:
                 if ex1.is_true:
-                    return int(20 / (pygame.time.get_ticks() - start_ticks) * 100000)
+                    return int(20/(pygame.time.get_ticks() - start_ticks)*100000)
                 else:
                     return 10
             if event.type == pygame.QUIT:
                 terminate()
         clock.tick(FPS)
+
+
+class Build_menu(QWidget):
+    def __init__(self, player, tile):
+        super().__init__()
+        uic.loadUi('build_menu.ui', self)  # Загружаем дизайн
+        self.player = player
+        self.button_1.clicked.connect(self.run)
+        self.button_2.clicked.connect(self.run)
+        self.tile = tile
+        name = tile.get_building_name().capitalize()
+        self.resources = BUILDINGS[name].split(',')
+        self.building_1.setText(name)
+        self.price_1.setText(BUILDINGS[name])
+        if player.castle:
+            self.price_2.hide()
+            self.building_2.hide()
+            self.build.hide()
+        else:
+            self.price_2.setText(BUILDINGS['Fort'])
+            self.building_2.setText('Fort')
+
+    def run(self):
+        for i in self.resources:
+            i = i.strip().split(' ')
+            name = i[1]
+            price = int(i[0])
+            if player.resources[name] >= price:
+                print(player.resources[name])
+                continue
+        else:
+            self.error.setText('Not enough resources')
+        # self.close()
 
 
 class MyWidget_primer(QMainWindow):
@@ -172,7 +205,7 @@ class MyWidget_primer(QMainWindow):
         self.is_pushed = False
         con = sqlite3.connect("data/equations.db")
         cur = con.cursor()
-        if name == 'tree' or name == 'iron':
+        if name == 'wood' or name == 'iron':
             self.result = choice(cur.execute("""SELECT * FROM primeri WHERE type = 'example'""").fetchall())
         if name == 'food':
             self.result = choice(cur.execute("""SELECT * FROM primeri WHERE type = 'lin_equation'""").fetchall())
@@ -191,8 +224,7 @@ class MyWidget_primer(QMainWindow):
         self.close()
 
 
-
-class MyWidget(QMainWindow):
+class Start_menu(QMainWindow):
     def __init__(self):
         super().__init__()
         uic.loadUi('untitled.ui', self)  # Загружаем дизайн
@@ -203,9 +235,9 @@ class MyWidget(QMainWindow):
 
     def run(self):
         size = int(self.sender().text().split('(')[1][0:2])
-        self.size = size * 30 + 320
+        self.size = size*30 + 320
         self.board_size = int(self.sender().text().split('(')[1][0:2])
-        self.topleft = int((self.size - size * CELL_SIZE) / 2)
+        self.topleft = int((self.size - size*CELL_SIZE)/2)
         self.is_pushed = True
         self.close()
 
@@ -214,7 +246,7 @@ def start_screen():
     pygame.init()
     clock = pygame.time.Clock()
     app = QApplication(sys.argv)
-    ex = MyWidget()
+    ex = Start_menu()
     ex.show()
     while True:
         if ex.is_pushed:
@@ -248,15 +280,15 @@ def resources_screen(resources):
     iron_i.rect.y = 0
     food_i.image = food
     food_i.rect = food_i.image.get_rect()
-    food_i.rect.x = SIZE // 4
+    food_i.rect.x = SIZE//4
     food_i.rect.y = 0
     wood_i.image = wood
     wood_i.rect = wood_i.image.get_rect()
-    wood_i.rect.x = 2 * SIZE // 4
+    wood_i.rect.x = 2*SIZE//4
     wood_i.rect.y = 0
     brilliant_i.image = brilliant
     brilliant_i.rect = brilliant_i.image.get_rect()
-    brilliant_i.rect.x = 3 * SIZE // 4
+    brilliant_i.rect.x = 3*SIZE//4
     brilliant_i.rect.y = 0
     font = pygame.font.Font(None, 30)
     resources_sprites.draw(screen)
@@ -265,7 +297,7 @@ def resources_screen(resources):
         count += 1
         string_rendered = font.render(str(resources[i]), 1, pygame.Color('black'))
         intro_rect = string_rendered.get_rect()
-        text_coord = count * SIZE // 4 + 50
+        text_coord = count*SIZE//4 + 50
         intro_rect.left = text_coord
         intro_rect.y = 15
         screen.blit(string_rendered, intro_rect)
@@ -275,21 +307,22 @@ def name_to_text(name):
     font = pygame.font.Font(None, 30)
     string_rendered = font.render(name, 1, pygame.Color('white'))
     intro_rect = string_rendered.get_rect()
-    text_coord = SIZE // 2 - 25
+    text_coord = SIZE//2 - 25
     intro_rect.left = text_coord
     intro_rect.y = SIZE - 100
     screen.blit(string_rendered, intro_rect)
-    
+
+
 class Frame(pygame.sprite.Sprite):
     def __init__(self, sprites, obj):
         super().__init__(sprites)
         self.image = load_image('frame.png')
         self.rect = self.image.get_rect()
-        self.rect.x = SIZE // 2 - 150
+        self.rect.x = SIZE//2 - 150
         self.rect.y = SIZE
         self.obj = obj
 
-    def call(self, obj):
+    def call(self):
         obj = self.obj
         if obj.__class__.__name__ == 'Resource':
             pickaxe = pygame.sprite.Sprite(object_sprites)
@@ -303,7 +336,7 @@ class Frame(pygame.sprite.Sprite):
             object.rect.x = self.rect.x + 200
             object.rect.y = self.rect.y
             while self.rect.y > SIZE - 100:
-                self.rect.y -= 600 / FPS
+                self.rect.y -= 600/FPS
                 if self.rect.y < SIZE - 100:
                     self.rect.y = SIZE - 100
                 pickaxe.rect.y = self.rect.y + 25
@@ -316,14 +349,14 @@ class Frame(pygame.sprite.Sprite):
             pickaxe.image = pygame.transform.scale(load_image('hammer.png'), (80, 80))
             pickaxe.rect = pickaxe.image.get_rect()
             pickaxe.rect.x = self.rect.x + 50
-            pickaxe.rect.y = self.rect.y + 25
+            pickaxe.rect.y = self.rect.y + 10
             object = pygame.sprite.Sprite(object_sprites)
-            object.image = pygame.transform.scale(obj.image, (100, 100))
+            object.image = pygame.transform.scale(obj.image, (75, 100))
             object.rect = object.image.get_rect()
             object.rect.x = self.rect.x + 200
             object.rect.y = self.rect.y
             while self.rect.y > SIZE - 100:
-                self.rect.y -= 600 / FPS
+                self.rect.y -= 600/FPS
                 if self.rect.y < SIZE - 100:
                     self.rect.y = SIZE - 100
                 pickaxe.rect.y = self.rect.y + 25
@@ -338,7 +371,7 @@ class Frame(pygame.sprite.Sprite):
             object.rect.x = self.rect.x + 200
             object.rect.y = self.rect.y
             while self.rect.y > SIZE - 100:
-                self.rect.y -= 600 / FPS
+                self.rect.y -= 600/FPS
                 if self.rect.y < SIZE - 100:
                     self.rect.y = SIZE - 100
                 object.rect.y = self.rect.y
@@ -352,29 +385,26 @@ def object_screen(obj):
     board.frames = []
     board.frames.append(Frame(object_sprites, obj))
     if obj.is_clicked:
-        board.frames[-1].call(1)
+        board.frames[-1].call()
 
 
 def mine_or_build_click(x, y):
-    if x > SIZE // 3 and x < SIZE // 3 + 100:
+    if SIZE//3 < x < SIZE//3 + 100:
         if y > SIZE - 150:
             return True
-
-
 
 
 class Button(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(all_sprites)
         self.turn = 1
-        self.image = self.image = pygame.transform.scale(load_image('knopka.jpg'), (100, 100))
-        self.rect = self.image.get_rect().move(SIZE - 100, 50)
+        self.image = self.image = pygame.transform.scale(load_image('next_turn.png'), (50, 50))
+        self.rect = self.image.get_rect().move(SIZE - 50, 50)
 
     def next_turn_click(self, x, y):
-        if x > SIZE - 100 and y > 50 and y < 150:
+        if x > SIZE - 100 and 50 < y < 150:
             self.turn += 1
             board.next_turn()
-            print(self.turn)
             return True
         else:
             return False
@@ -384,9 +414,9 @@ def lose():
     running = False
 
 
-class Board():
+class Board:
     def __init__(self):
-        self.side_size = int(SIZE // 30)
+        self.side_size = int(SIZE//30)
         self.cell_size = 30
         self.width = self.height = BOARD_SIZE
         self.list = [[Field(i, j, all_sprites, self.cell_size) for i in range(self.width)] for j in range(self.height)]
@@ -394,7 +424,7 @@ class Board():
         self.passive = {
             'iron': 0,
             'food': 0,
-            'tree': 0,
+            'wood': 0,
             'brilliant': 0
         }
         self.turn = 1
@@ -403,68 +433,64 @@ class Board():
             for y_iron in range(0, self.width, 3):
                 for x in range(randrange(2, 4)):
                     for y in range(randrange(2, 4)):
-                        if x * (x_iron + 1) >= self.width or y * (y_iron + 1) >= self.width:
+                        if x*(x_iron + 1) >= self.width or y*(y_iron + 1) >= self.width:
                             continue
-                        if self.list[x * (x_iron + 1)][y * (y_iron + 1)].__class__.__name__ == 'Resource':
+                        if self.list[x*(x_iron + 1)][y*(y_iron + 1)].__class__.__name__ == 'Resource':
                             continue
-                        self.list[x * (x_iron + 1)][y * (y_iron + 1)] = Resource(x * (x_iron + 1), y * (y_iron + 1),
-                                                                                 'iron', all_sprites)
+                        self.list[x*(x_iron + 1)][y*(y_iron + 1)] = Resource(x*(x_iron + 1), y*(y_iron + 1),
+                                                                             'iron', all_sprites)
         for x_tree in range(0, self.width, 2):
             for y_tree in range(0, self.width, 2):
                 for x in range(randrange(2, 4)):
                     for y in range(randrange(1, 4)):
-                        if x * (x_tree + 1) >= self.width or y * (y_tree + 1) >= self.width:
+                        if x*(x_tree + 1) >= self.width or y*(y_tree + 1) >= self.width:
                             continue
-                        if self.list[x * (x_tree + 1)][y * (y_tree + 1)].__class__.__name__ == 'Resource':
+                        if self.list[x*(x_tree + 1)][y*(y_tree + 1)].__class__.__name__ == 'Resource':
                             continue
-                        self.list[x * (x_tree + 1)][y * (y_tree + 1)] = Resource(x * (x_tree + 1), y * (y_tree + 1),
-                                                                                 'tree', all_sprites)
+                        self.list[x*(x_tree + 1)][y*(y_tree + 1)] = Resource(x*(x_tree + 1), y*(y_tree + 1),
+                                                                             'wood', all_sprites)
         for x_food in range(0, self.width, 2):
             for y_food in range(0, self.width, 2):
                 for x in range(3):
                     for y in range(randrange(1, 3)):
-                        if x * (x_food + 1) >= self.width or y * (y_food + 1) >= self.width:
+                        if x*(x_food + 1) >= self.width or y*(y_food + 1) >= self.width:
                             continue
-                        if self.list[x * (x_food + 1)][y * (y_food + 1)].__class__.__name__ == 'Resource':
+                        if self.list[x*(x_food + 1)][y*(y_food + 1)].__class__.__name__ == 'Resource':
                             continue
-                        self.list[x * (x_food + 1)][y * (y_food + 1)] = Resource(x * (x_food + 1), y * (y_food + 1),
-                                                                                 'food', all_sprites)
+                        self.list[x*(x_food + 1)][y*(y_food + 1)] = Resource(x*(x_food + 1), y*(y_food + 1),
+                                                                             'food', all_sprites)
 
-        self.top = (SIZE - self.width * self.cell_size) / 2
-        self.left = (SIZE - self.width * self.cell_size) / 2
+        self.top = (SIZE - self.width*self.cell_size)/2
+        self.left = (SIZE - self.width*self.cell_size)/2
         self.units = []
-        self.units.append(Builder(randrange(SIZE // 30 // 2 - 3, SIZE // 30 // 2),
-                                  randrange(SIZE // 30 // 2 - 3, SIZE // 30 // 2), self))
-        self.units.append(Scout(randrange(SIZE // 30 // 2 - 3, SIZE // 30 // 2),
-                                randrange(SIZE // 30 // 2 - 3, SIZE // 30 // 2), self))
+        self.units.append(Builder(randrange(SIZE//30//2 - 3, SIZE//30//2),
+                                  randrange(SIZE//30//2 - 3, SIZE//30//2), self))
+        self.units.append(Scout(randrange(SIZE//30//2 - 3, SIZE//30//2),
+                                randrange(SIZE//30//2 - 3, SIZE//30//2), self))
         self.scout_can_go = True
         self.builder_can_go = True
 
     def next_turn(self):
         self.turn += 1
-        player.update_resources('tree', self.passive['tree'])
+        player.update_resources('wood', self.passive['wood'])
         player.update_resources('iron', self.passive['iron'])
         player.update_resources('food', self.passive['food'])
         player.update_resources('brilliant', self.passive['brilliant'])
         self.scout_can_go = True
         self.builder_can_go = True
-        if self.turn % 10 == 0:
-            player.hp_update(-10 * ((turn % 10) * 0.7)**2)
+        if self.turn%10 == 0:
+            player.hp_update(-10*((self.turn%10)*0.7) ** 2)
         if player.hp <= 0:
             lose()
-
-
 
     def get_cell(self, mouse_pos):
         for i in range(self.height):
             for j in range(self.width):
-                if self.top + j * self.cell_size <= mouse_pos[0] <= self.cell_size + self.top + j * self.cell_size and \
-                        self.top + i * self.cell_size <= mouse_pos[1] <= self.cell_size + self.top + i * self.cell_size:
+                if self.top + j*self.cell_size <= mouse_pos[0] <= self.cell_size + self.top + j*self.cell_size and \
+                        self.top + i*self.cell_size <= mouse_pos[1] <= self.cell_size + self.top + i*self.cell_size:
                     return i, j
 
     def on_click(self, cell_coords, event):
-        print(self.units)
-        print(self.list)
         if event.button == 1:
             button.next_turn_click(event.pos[0], event.pos[1])
             for i in self.units:
@@ -492,13 +518,10 @@ class Board():
                             tile.unclick()
         if event.button == 3:
             if mine_or_build_click(event.pos[0], event.pos[1]):
-                print([i.obj for i in board.frames])
                 if board.frames[-1].obj.__class__.__name__ == 'Resource':
                     for i in self.list:
                         for j in i:
-                            print(1)
                             if j.is_clicked and j.__class__.__name__ == 'Resource':
-                                print(2)
                                 j.mine()
                 if board.frames[-1].obj.__class__.__name__ == 'Builder':
                     for i in self.units:
@@ -506,7 +529,8 @@ class Board():
                             i.build()
             else:
                 for i in self.units:
-                    if (i.__class__.__name__ == 'Builder' and self.builder_can_go) or (i.__class__.__name__ == 'Scout' and self.scout_can_go):
+                    if (i.__class__.__name__ == 'Builder' and self.builder_can_go) or (
+                            i.__class__.__name__ == 'Scout' and self.scout_can_go):
                         if i.is_clicked and i.can_move(cell_coords):
                             i.move(cell_coords[0], cell_coords[1])
                             if i.__class__.__name__ == 'Builder':
@@ -523,8 +547,8 @@ class Board():
         self.on_click(cell, event)
 
     def render(self):
-        self.top = (SIZE - self.width * self.cell_size) / 2
-        self.left = (SIZE - self.width * self.cell_size) / 2
+        self.top = (SIZE - self.width*self.cell_size)/2
+        self.left = (SIZE - self.width*self.cell_size)/2
         for i in range(self.height):
             for j in range(self.width):
                 for e in self.units:
@@ -534,7 +558,7 @@ class Board():
                 else:
                     if self.list[i][j].is_clicked:
                         name_to_text(self.list[i][j].name)
-                pygame.draw.rect(screen, (255, 255, 255), (self.top + j * self.cell_size, self.top + i
+                pygame.draw.rect(screen, (255, 255, 255), (self.top + j*self.cell_size, self.top + i
                                                            * self.cell_size, self.cell_size, self.cell_size), 1)
 
 
@@ -550,7 +574,7 @@ class Human(pygame.sprite.Sprite):
     def move(self, x, y):
         self.x = x
         self.y = y
-        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
+        self.rect = self.image.get_rect().move(self.y*self.cell_size + TOPLEFT, self.x*self.cell_size + TOPLEFT)
 
     def can_move(self, coords):
         x = coords[0]
@@ -601,9 +625,9 @@ class Human(pygame.sprite.Sprite):
 class Builder(Human):
     def __init__(self, pos_x, pos_y, board):
         super().__init__(pos_x, pos_y, board)
-        self.image = load_image('player_stand.png')
+        self.image = load_image('builder.png')
         self.image = pygame.transform.scale(self.image, (30, 30))
-        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
+        self.rect = self.image.get_rect().move(self.y*self.cell_size + TOPLEFT, self.x*self.cell_size + TOPLEFT)
         self.name = 'builder'
 
     def can_move(self, coords):
@@ -644,9 +668,15 @@ class Builder(Human):
         for i in self.board.list:
             for j in i:
                 if j.__class__.__name__ == 'Resource' and (self.x, self.y) == j.get_coords():
-                    j.build()
+                    self.building_menu(player, j)
                 if j.__class__.__name__ == 'Field' and (self.x, self.y) == j.get_coords():
-                    j.build()
+                    self.building_menu(player, j)
+
+    def building_menu(self, player, name):
+        app = QApplication(sys.argv)
+        build_menu = Build_menu(player, name)
+        build_menu.show()
+        app.exec_()
 
 
 class Scout(Human):
@@ -654,7 +684,7 @@ class Scout(Human):
         super().__init__(x, y, board)
         self.image = load_image('scout.png')
         self.image = pygame.transform.scale(self.image, (30, 30))
-        self.rect = self.image.get_rect().move(self.y * self.cell_size + TOPLEFT, self.x * self.cell_size + TOPLEFT)
+        self.rect = self.image.get_rect().move(self.y*self.cell_size + TOPLEFT, self.x*self.cell_size + TOPLEFT)
         self.name = 'scout'
 
     def can_move(self, coords):
