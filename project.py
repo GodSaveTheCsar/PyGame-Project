@@ -71,7 +71,7 @@ class Field(Tile):
             player.castle = True
             board.list[self.x][self.y] = Castle(self.x, self.y, all_sprites)
         else:
-            board.list[self.x][self.y] = Pyramid(self.x, self.y, all_sprites, 30)
+            board.list[self.x][self.y] = Pyramid(self.x, self.y, all_sprites)
             board.passive['brilliant'] += 25
 
 
@@ -84,15 +84,15 @@ class Building(Tile):
         self.name = name
 
 
-class Pyramid(Building):
-    def __init__(self, x, y, sprites, cell_size):
+class Pyramid(Tile):
+    def __init__(self, x, y, sprites):
         super().__init__(x, y, sprites)
-        self.image = pygame.transform.scale(load_image('pyramid.png'), (cell_size, cell_size))
+        self.image = pygame.transform.scale(load_image('pyramid.png'), (30, 30))
         self.rect = self.image.get_rect().move(y*CELL_SIZE + TOPLEFT, x*CELL_SIZE + TOPLEFT)
         self.name = 'pyramid'
 
 
-class Castle(Building):
+class Castle(Tile):
     def __init__(self, x, y, sprite):
         super().__init__(x, y, sprite)
         self.x = x
@@ -105,10 +105,10 @@ class Castle(Building):
 class Player:
     def __init__(self):
         self.resources = {
-            'iron': 0,
-            'food': 0,
-            'wood': 0,
-            'brilliant': 0
+            'iron': 11110,
+            'food': 11110,
+            'wood': 111110,
+            'brilliant': 111110
         }
         self.hp = 100
         self.castle = False
@@ -194,7 +194,7 @@ def get_primer(name):
                     return int(20/(pygame.time.get_ticks() - start_ticks)*100000)
                 else:
                     return 10
-            if event.type == pygame.QUIT or ex1.closed:
+            if event.type == pygame.QUIT:
                 return 0
         clock.tick(FPS)
 
@@ -216,7 +216,7 @@ class Build_menu(QWidget):
         if player.castle:
             self.price_2.hide()
             self.building_2.hide()
-            self.build.hide()
+            self.button_2.hide()
         else:
             self.price_2.setText(BUILDINGS['Fort'])
             self.building_2.setText('Fort')
@@ -248,7 +248,6 @@ class MyWidget_primer(QMainWindow):
         super().__init__()
         uic.loadUi('primer.ui', self)  # Загружаем дизайн
         self.is_pushed = False
-        self.closed = False
         con = sqlite3.connect("data/equations.db")
         cur = con.cursor()
         if name == 'wood':
@@ -270,6 +269,7 @@ class MyWidget_primer(QMainWindow):
         self.close()
 
 
+
 class Game_information(QWidget):
     def __init__(self):
         super().__init__()
@@ -285,7 +285,6 @@ class Start_menu(QMainWindow):
         self.small.clicked.connect(self.run)
         self.medium.clicked.connect(self.run)
         self.big.clicked.connect(self.run)
-        self.information.clicked.connect(self.get_information)
 
     def run(self):
         size = int(self.sender().text().split('(')[1][0:2])
@@ -294,12 +293,6 @@ class Start_menu(QMainWindow):
         self.topleft = int((self.size - size*CELL_SIZE)/2)
         self.is_pushed = True
         self.close()
-
-    def get_information(self):
-        app = QApplication(sys.argv)
-        info = Game_information()
-        info.show()
-        app.exec_()
 
 
 # Интро
@@ -525,7 +518,7 @@ class Board:
                             continue
                         if self.list[x*(x_tree + 1)][y*(y_tree + 1)].__class__.__name__ == 'Resource':
                             continue
-                        self.list[x*(x_tree + 1)][y*(y_tree + 1)] = Resource(x*(x_tree + 1), y*(y_tree + 1),
+                        self.list[x*(x_tree + 1)][ y* (y_tree + 1)] = Resource(x*(x_tree + 1), y*(y_tree + 1),
                                                                              'wood', all_sprites)
         for x_food in range(0, self.width, 2):
             for y_food in range(0, self.width, 2):
@@ -555,8 +548,11 @@ class Board:
         player.update_resources('brilliant', self.passive['brilliant'])
         self.scout_can_go = True
         self.builder_can_go = True
-        if self.turn%10 == 0:
-            player.hp_update(int(-10*((self.turn/10)*3) ** 1.5))
+        if self.turn % 10 == 0:
+            if player.castle:
+                player.hp_update(int(-5 * ((self.turn / 10) * 3) ** 1.5))
+            else:
+                player.hp_update(int(-10 * ((self.turn / 10) * 3) ** 1.5))
         if player.hp <= 0:
             lose()
         checker.upd_text()
@@ -604,6 +600,7 @@ class Board:
                     for i in self.list:
                         for j in i:
                             if j.is_clicked and j.__class__.__name__ == 'Resource':
+                                print(j)
                                 j.mine()
                 if board.frames[-1].obj.__class__.__name__ == 'Builder':
                     for i in self.units:
